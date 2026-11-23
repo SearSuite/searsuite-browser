@@ -1,0 +1,49 @@
+{
+  "name": "@searsuite/sear-plugin-web-doc-toolbar",
+  "type": "module",
+  "version": "0.0.1",
+  "license": "MIT",
+  "homepage": "https://searsuite.com/",
+  "keywords": [
+    "searsuite",
+    "document-editor",
+    "rich-text",
+    "toolbar"
+  ],
+  "main": "./dist/index.js",
+  "module": "src/index.ts",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./dist",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@searsuite/sear-assembly-commands": "workspace:*",
+    "@searsuite/sear-assembly-setup": "workspace:*",
+    "@searsuite/sear-foundation-subscription": "workspace:*",
+    "@searsuite/sear-plugin-web-toolbar": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SearSuite/searsuite-browser.git",
+    "directory": "packages/sear-plugin-web-doc-toolbar"
+  },
+  "bugs": {
+    "url": "https://github.com/SearSuite/searsuite-browser/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

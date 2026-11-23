@@ -1,0 +1,56 @@
+{
+  "name": "@searsuite/sear-browser-adapters",
+  "version": "0.0.1",
+  "license": "MIT",
+  "homepage": "https://searsuite.com/",
+  "description": "Browser implementations of SearSuite platform, rendering, input, and transport contracts.",
+  "keywords": [
+    "searsuite",
+    "browser",
+    "adapters"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./dist",
+    "compile": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@searsuite/sear-domain-collaboration": "workspace:*",
+    "@searsuite/sear-foundation-di": "workspace:*",
+    "@searsuite/sear-foundation-error": "workspace:*",
+    "@searsuite/sear-foundation-keymap": "workspace:*",
+    "@searsuite/sear-foundation-platform": "workspace:*",
+    "@searsuite/sear-foundation-user-interaction": "workspace:*",
+    "@searsuite/sear-foundation-utils": "workspace:*",
+    "@searsuite/sear-plugin-collab": "workspace:*",
+    "@searsuite/sear-render-context": "workspace:*",
+    "@searsuite/sear-render-cursor": "workspace:*",
+    "@searsuite/sear-render-event-engine": "workspace:*",
+    "@searsuite/sear-render-input": "workspace:*",
+    "@searsuite/sear-render-metrics": "workspace:*",
+    "@searsuite/sear-render-scroll": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SearSuite/searsuite-browser.git",
+    "directory": "packages/sear-browser-adapters"
+  },
+  "bugs": {
+    "url": "https://github.com/SearSuite/searsuite-browser/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

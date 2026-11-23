@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@searsuite/*": ["packages/*/src", "../searsuite/packages/*/src"]
+    },
+    "types": ["jest", "node"]
+  },
+  "exclude": ["node_modules", "**/dist", "**/dist/**"]
+}

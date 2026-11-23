@@ -1,0 +1,88 @@
+{
+  "name": "@searsuite/sear-plugin-web-toolbar",
+  "version": "0.0.1",
+  "license": "MIT",
+  "homepage": "https://searsuite.com/",
+  "keywords": [
+    "searsuite",
+    "spreadsheet",
+    "toolbar",
+    "web-editor"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./dist",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@searsuite/sear-browser-adapters": "workspace:*",
+    "@searsuite/sear-assembly-commands": "workspace:*",
+    "@searsuite/sear-assembly-core": "workspace:*",
+    "@searsuite/sear-assembly-plugin": "workspace:*",
+    "@searsuite/sear-domain-cell-types": "workspace:*",
+    "@searsuite/sear-domain-doc": "workspace:*",
+    "@searsuite/sear-domain-formula-engine": "workspace:*",
+    "@searsuite/sear-domain-formula-engine-ts": "workspace:*",
+    "@searsuite/sear-foundation-di": "workspace:*",
+    "@searsuite/sear-foundation-error": "workspace:*",
+    "@searsuite/sear-foundation-platform": "workspace:*",
+    "@searsuite/sear-foundation-rect": "workspace:*",
+    "@searsuite/sear-foundation-subscription": "workspace:*",
+    "@searsuite/sear-foundation-user-interaction": "workspace:*",
+    "@searsuite/sear-foundation-utils": "workspace:*",
+    "@searsuite/sear-plugin-alignment": "workspace:*",
+    "@searsuite/sear-plugin-cell-border": "workspace:*",
+    "@searsuite/sear-plugin-cell-editor": "workspace:*",
+    "@searsuite/sear-plugin-cell-fill": "workspace:*",
+    "@searsuite/sear-plugin-cell-format": "workspace:*",
+    "@searsuite/sear-plugin-cell-highlight": "workspace:*",
+    "@searsuite/sear-plugin-cell-merge": "workspace:*",
+    "@searsuite/sear-plugin-checkbox": "workspace:*",
+    "@searsuite/sear-plugin-clear-style": "workspace:*",
+    "@searsuite/sear-plugin-clipboard": "workspace:*",
+    "@searsuite/sear-plugin-data-validation": "workspace:*",
+    "@searsuite/sear-plugin-dropdown": "workspace:*",
+    "@searsuite/sear-plugin-duplicate": "workspace:*",
+    "@searsuite/sear-plugin-filter": "workspace:*",
+    "@searsuite/sear-plugin-find-replace": "workspace:*",
+    "@searsuite/sear-plugin-formula": "workspace:*",
+    "@searsuite/sear-plugin-fixed-row": "workspace:*",
+    "@searsuite/sear-plugin-format-painter": "workspace:*",
+    "@searsuite/sear-plugin-freeze": "workspace:*",
+    "@searsuite/sear-plugin-history": "workspace:*",
+    "@searsuite/sear-plugin-i18n": "workspace:*",
+    "@searsuite/sear-plugin-resize": "workspace:*",
+    "@searsuite/sear-plugin-selection": "workspace:*",
+    "@searsuite/sear-plugin-sort": "workspace:*",
+    "@searsuite/sear-render": "workspace:*",
+    "@searsuite/sear-render-context": "workspace:*",
+    "@searsuite/sear-render-engine": "workspace:*",
+    "@searsuite/sear-render-input": "workspace:*",
+    "@searsuite/sear-render-metrics": "workspace:*",
+    "@searsuite/sear-sheet-editor-contract": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SearSuite/searsuite-browser.git",
+    "directory": "packages/sear-plugin-web-toolbar"
+  },
+  "bugs": {
+    "url": "https://github.com/SearSuite/searsuite-browser/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

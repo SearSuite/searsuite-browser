@@ -1,0 +1,53 @@
+{
+  "name": "@searsuite/sear-plugin-web-sheet-tabbar",
+  "version": "0.0.1",
+  "license": "MIT",
+  "homepage": "https://searsuite.com/",
+  "keywords": [
+    "searsuite",
+    "spreadsheet",
+    "workbook-tabs",
+    "toolbar"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./dist",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@searsuite/sear-assembly-setup": "workspace:*",
+    "@searsuite/sear-assembly-workbook": "workspace:*",
+    "@searsuite/sear-domain-workbook": "workspace:*",
+    "@searsuite/sear-foundation-common": "workspace:*",
+    "@searsuite/sear-foundation-di": "workspace:*",
+    "@searsuite/sear-foundation-platform": "workspace:*",
+    "@searsuite/sear-plugin-cell-editor": "workspace:*",
+    "@searsuite/sear-plugin-selection": "workspace:*",
+    "@searsuite/sear-plugin-zoom": "workspace:*",
+    "@searsuite/sear-render-engine": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SearSuite/searsuite-browser.git",
+    "directory": "packages/sear-plugin-web-sheet-tabbar"
+  },
+  "bugs": {
+    "url": "https://github.com/SearSuite/searsuite-browser/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
