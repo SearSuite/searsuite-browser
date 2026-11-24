@@ -25,7 +25,7 @@ The core repository owns state, commands, rendering contracts, and host-neutral 
 | `sear-render-metrics` | `WebTextShaper` and browser text-shaping helpers | `TextShaper` contract and render-context-backed fallback |
 | `sear-render-scroll` | `WebScroller` | `Scroller`, logical scroll, axis lock and rubber-band calculation |
 
-The three `sear-plugin-web-*` packages above live entirely in this repository. `searsuite-pro` owns the Node platform and Fetch adapters plus the headless Sheet/Workbook assembly.
+The three `sear-plugin-web-*` packages above live entirely in this repository. `searsuite` owns the Node platform and Fetch adapters plus the headless Sheet/Workbook assembly.
 
 ## Development
 
