@@ -10,42 +10,51 @@ type Selection = { anchor: [number, number]; focus: [number, number] };
 
 /** Displays the current cell's validation failure next to its selection. */
 export class WebDataValidationFeedback {
-  private root: HTMLElement | null = null;
-  private disposeWheel: (() => void) | null = null;
-  private disposeResize: (() => void) | null = null;
-  private active = true;
+  readonly #core: SearCoreSheet;
+  readonly #queries: SheetQueryRegistry;
+  readonly #getSelection: () => Selection | null;
+  readonly #platform: Platform;
+
+  #root: HTMLElement | null = null;
+  #disposeWheel: (() => void) | null = null;
+  #disposeResize: (() => void) | null = null;
+  #active = true;
 
   public constructor(
-    private readonly core: SearCoreSheet,
-    private readonly queries: SheetQueryRegistry,
-    private readonly getSelection: () => Selection | null,
-    private readonly platform: Platform,
+    core: SearCoreSheet,
+    queries: SheetQueryRegistry,
+    getSelection: () => Selection | null,
+    platform: Platform,
   ) {
+    this.#core = core;
+    this.#queries = queries;
+    this.#getSelection = getSelection;
+    this.#platform = platform;
     const target = core.renderEngine.renderContext.getRoot();
     if (target instanceof Element) {
-      this.disposeWheel = platform.addEventListener(target, 'wheel', () => {
+      this.#disposeWheel = platform.addEventListener(target, 'wheel', () => {
         platform.setTimeout(() => this.refresh(), 0);
       });
     }
-    this.disposeResize = platform.addEventListener(window, 'resize', () => this.refresh());
+    this.#disposeResize = platform.addEventListener(window, 'resize', () => this.refresh());
   }
 
   public refresh(): void {
-    if (!this.active) return;
-    const selection = this.getSelection();
+    if (!this.#active) return;
+    const selection = this.#getSelection();
     if (!selection || selection.anchor[0] !== selection.focus[0] ||
       selection.anchor[1] !== selection.focus[1]) {
-      this.hide();
+      this.#hide();
       return;
     }
-    const issue = this.queries.has(ReadDataValidationIssueQuery)
-      ? this.queries.run(ReadDataValidationIssueQuery, selection.anchor) : null;
-    const prompt = !issue && this.queries.has(ReadDataValidationCellRulesQuery)
-      ? this.queries.run(ReadDataValidationCellRulesQuery, selection.anchor)
+    const issue = this.#queries.has(ReadDataValidationIssueQuery)
+      ? this.#queries.run(ReadDataValidationIssueQuery, selection.anchor) : null;
+    const prompt = !issue && this.#queries.has(ReadDataValidationCellRulesQuery)
+      ? this.#queries.run(ReadDataValidationCellRulesQuery, selection.anchor)
         .find(({ rule }) => rule.inputMessage?.trim())?.rule.inputMessage : null;
-    const position = (issue || prompt) && this.position(selection.anchor);
-    if (!position) { this.hide(); return; }
-    if (!this.root) {
+    const position = (issue || prompt) && this.#position(selection.anchor);
+    if (!position) { this.#hide(); return; }
+    if (!this.#root) {
       const root = document.createElement('div');
       root.className = 'sear-validation-feedback';
       root.setAttribute('role', 'status');
@@ -55,42 +64,42 @@ export class WebDataValidationFeedback {
       const message = document.createElement('p'); message.className = 'sear-validation-feedback__message';
       content.append(title, message); root.append(icon, content);
       document.body.append(root);
-      this.root = root;
+      this.#root = root;
     }
-    this.root.classList.toggle('sear-validation-feedback--hint', !issue);
-    this.root.querySelector('strong')!.textContent = issue ? 'Invalid data' : 'Input message';
-    this.root.querySelector<HTMLElement>('.sear-validation-feedback__message')!.textContent = issue?.message ?? prompt ?? '';
-    const width = this.root.offsetWidth;
-    const height = this.root.offsetHeight;
+    this.#root.classList.toggle('sear-validation-feedback--hint', !issue);
+    this.#root.querySelector('strong')!.textContent = issue ? 'Invalid data' : 'Input message';
+    this.#root.querySelector<HTMLElement>('.sear-validation-feedback__message')!.textContent = issue?.message ?? prompt ?? '';
+    const width = this.#root.offsetWidth;
+    const height = this.#root.offsetHeight;
     const left = position.left - width - 10 >= 8 ? position.left - width - 10 : position.right + 10;
-    this.root.style.left = `${Math.max(8, Math.min(left, window.innerWidth - width - 8))}px`;
-    this.root.style.top = `${Math.max(8, Math.min(position.top, window.innerHeight - height - 8))}px`;
+    this.#root.style.left = `${Math.max(8, Math.min(left, window.innerWidth - width - 8))}px`;
+    this.#root.style.top = `${Math.max(8, Math.min(position.top, window.innerHeight - height - 8))}px`;
   }
 
   public destroy(): void {
-    this.active = false;
-    this.disposeWheel?.(); this.disposeWheel = null;
-    this.disposeResize?.(); this.disposeResize = null;
-    this.hide();
+    this.#active = false;
+    this.#disposeWheel?.(); this.#disposeWheel = null;
+    this.#disposeResize?.(); this.#disposeResize = null;
+    this.#hide();
   }
 
-  private hide(): void { this.root?.remove(); this.root = null; }
+  #hide(): void { this.#root?.remove(); this.#root = null; }
 
-  private position([row, column]: readonly [number, number]): { left: number; right: number; top: number } | null {
-    const dataEngine = this.core.getDataEngine();
+  #position([row, column]: readonly [number, number]): { left: number; right: number; top: number } | null {
+    const dataEngine = this.#core.getDataEngine();
     const rowSizes = readSheetRowSizes(dataEngine);
     const columnSizes = readSheetColumnSizes(dataEngine);
-    const target = this.core.renderEngine.renderContext.getRoot();
+    const target = this.#core.renderEngine.renderContext.getRoot();
     if (!rowSizes || !columnSizes || !(target instanceof Element)) return null;
-    const config = this.core.configEngine.getDefaultConfig() as { sheetOffsetX?: number; sheetOffsetY?: number };
+    const config = this.#core.configEngine.getDefaultConfig() as { sheetOffsetX?: number; sheetOffsetY?: number };
     const rect = getSheetRangePositionRect([row, column], [row, column], {
       rowSizes, columnSizes, offsetX: config.sheetOffsetX ?? 50, offsetY: config.sheetOffsetY ?? 24,
     });
     if (!rect) return null;
     const bounds = target.getBoundingClientRect();
-    const scroll = this.core.renderEngine.scrollManager.getState();
+    const scroll = this.#core.renderEngine.scrollManager.getState();
     const freeze = readSheetFreeze(dataEngine);
-    const [viewportWidth, viewportHeight] = this.core.renderEngine.scrollManager.getShape();
+    const [viewportWidth, viewportHeight] = this.#core.renderEngine.scrollManager.getShape();
     const scaleX = viewportWidth ? bounds.width / viewportWidth : 1;
     const scaleY = viewportHeight ? bounds.height / viewportHeight : 1;
     const left = bounds.left + (rect.x - (column < freeze.columns ? 0 : scroll.x)) * scaleX;

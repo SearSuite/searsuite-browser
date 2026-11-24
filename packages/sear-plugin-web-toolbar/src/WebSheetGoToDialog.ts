@@ -2,7 +2,7 @@ export type SheetGoToChoice = 'address' | 'constants' | 'formulas' | 'blanks' | 
 
 /** Browser-facing Go To dialog; selection and data reads stay with the caller. */
 export class WebSheetGoToDialog {
-  private dialog: HTMLDialogElement | null = null;
+  #dialog: HTMLDialogElement | null = null;
 
   public open(onApply: (choice: SheetGoToChoice, address: string) => string | null, onClose: () => void): void {
     this.destroy();
@@ -25,7 +25,7 @@ export class WebSheetGoToDialog {
         <footer><button type="button" data-action="cancel">Cancel</button><button type="submit">Go to</button></footer>
       </form>`;
     document.body.appendChild(dialog);
-    this.dialog = dialog;
+    this.#dialog = dialog;
     let finished = false;
     const finish = (): void => {
       if (finished) return;
@@ -51,7 +51,7 @@ export class WebSheetGoToDialog {
   }
 
   public destroy(): void {
-    this.dialog?.remove();
-    this.dialog = null;
+    this.#dialog?.remove();
+    this.#dialog = null;
   }
 }

@@ -8,33 +8,37 @@ export interface WebGLTextureEntry {
 
 /** Lazily uploads host image sources and reuses their WebGL textures. */
 export class WebGLTextureCache {
-  private readonly entries = new WeakMap<object, WebGLTextureEntry>();
+  readonly #gl: WebGLRenderingContext;
 
-  public constructor(private readonly gl: WebGLRenderingContext) {}
+  readonly #entries = new WeakMap<object, WebGLTextureEntry>();
+
+  public constructor(gl: WebGLRenderingContext) {
+    this.#gl = gl;
+  }
 
   public get(source: unknown): WebGLTextureEntry {
     if (!source || typeof source !== 'object') throw new SearError('WebWebGLRenderContext requires an image object.');
-    const cached = this.entries.get(source);
+    const cached = this.#entries.get(source);
     if (cached) {
-      if (isDynamicSource(source)) this.upload(cached.texture, source);
+      if (isDynamicSource(source)) this.#upload(cached.texture, source);
       return cached;
     }
     const dimensions = readDimensions(source);
-    const texture = this.gl.createTexture();
+    const texture = this.#gl.createTexture();
     if (!texture) throw new SearError('WebWebGLRenderContext could not create an image texture.');
-    const gl = this.gl;
-    this.upload(texture, source);
+    const gl = this.#gl;
+    this.#upload(texture, source);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     const entry = { ...dimensions, texture };
-    this.entries.set(source, entry);
+    this.#entries.set(source, entry);
     return entry;
   }
 
-  private upload(texture: WebGLTexture, source: object): void {
-    const gl = this.gl;
+  #upload(texture: WebGLTexture, source: object): void {
+    const gl = this.#gl;
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source as TexImageSource);

@@ -200,30 +200,23 @@ describe('WebTextInput', () => {
     expect(onTextInput).toHaveBeenCalledTimes(4);
   });
 
-  it('handles null hiddenInput and fallback event data gracefully', () => {
+  it('ignores empty event data and detaches listeners when stopped', () => {
     const textInput = new WebTextInput();
     const onTextInput = jest.fn();
     textInput.subscribe({ onTextInput });
-
-    // Manually force hiddenInput to be null before startListener
-    textInput['hiddenInput'] = null;
-    // But startListener creates it. So we mock createHiddenInput to not set it
-    textInput['createHiddenInput'] = jest.fn();
-
-    // Call startListener and stopListener with null hiddenInput to cover optional chaining
     textInput.startListener();
-    textInput.stopListener();
-    textInput.refocus();
-    textInput.setPosition(0, 0);
+    const input = getHiddenInput();
+    input.dispatchEvent(new CompositionEvent('compositionupdate', { data: '' }));
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('paste', { cancelable: true }));
+    expect(onTextInput).not.toHaveBeenCalled();
 
-    // Call composition and input handlers directly with null hiddenInput
-    textInput['handleCompositionUpdate']({ data: null } as any);
-    textInput['handleCompositionUpdate']({ data: undefined } as any);
-    textInput['compositionEnd']({ data: 'end text', stopPropagation: jest.fn() } as any);
-    textInput['handleInput']({ stopPropagation: jest.fn() } as any);
-    textInput['handlePaste']({ clipboardData: null, preventDefault: jest.fn() } as any);
-
+    input.dispatchEvent(new CompositionEvent('compositionend', { data: 'end text' }));
     expect(onTextInput).toHaveBeenLastCalledWith({ kind: TextInputKind.Text, text: 'end text' });
+    textInput.stopListener();
+    onTextInput.mockClear();
+    input.dispatchEvent(new CompositionEvent('compositionend', { data: 'detached' }));
+    expect(onTextInput).not.toHaveBeenCalled();
   });
 
   it('handles optional chaining branches when no subscribers are attached and text is empty', () => {
@@ -236,13 +229,12 @@ describe('WebTextInput', () => {
     input.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'some data' }));
 
     // Trigger handleComposingKeydown when NOT composing (hits !this.isComposing return)
-    textInput['isComposing'] = false;
     input.dispatchEvent(new KeyboardEvent('keydown', { key: KeyboardKey.ArrowLeft }));
 
     // Exercise composition caret updates without a subscriber.
-    textInput['isComposing'] = true;
-    textInput['composingText'] = 'hello';
-    textInput['composingOffset'] = 2;
+    input.dispatchEvent(new CompositionEvent('compositionstart'));
+    input.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'hello' }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: KeyboardKey.Home }));
     input.dispatchEvent(new KeyboardEvent('keydown', { key: KeyboardKey.ArrowRight }));
 
     // Clear composition without committing text.
@@ -272,7 +264,7 @@ describe('WebTextInput', () => {
     input.dispatchEvent(cut);
 
     // Trigger handleInput when isComposing is true
-    textInput['isComposing'] = true;
+    input.dispatchEvent(new CompositionEvent('compositionstart'));
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
     textInput.stopListener();

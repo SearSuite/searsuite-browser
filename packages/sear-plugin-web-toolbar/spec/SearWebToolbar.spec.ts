@@ -893,7 +893,8 @@ describe('SearWebToolbar', () => {
     const core = createCore();
     const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), createCommands(core));
 
-    (toolbar as unknown as { buildToolbar: () => void }).buildToolbar();
+    toolbar.mount(null);
+    toolbar.destroy();
 
     const target = document.createElement('div');
     document.body.appendChild(target);

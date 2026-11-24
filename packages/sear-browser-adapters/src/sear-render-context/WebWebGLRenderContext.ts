@@ -44,28 +44,31 @@ interface WebGLRenderState {
  */
 @Injectable()
 export class WebWebGLRenderContext extends RenderContext {
-  public static readonly symbol: symbol = Symbol.for('WebWebGLRenderContext');
-  private readonly target: HTMLCanvasElement;
-  private readonly gl: WebGLRenderingContext;
-  private readonly renderer: WebGLNativeRenderer;
-  private readonly textures: WebGLTextureCache;
-  private readonly measureContext: CanvasRenderingContext2D;
-  private readonly glyphAtlases = new Map<string, WebGLGlyphAtlas>();
-  private readonly stateStack: WebGLRenderState[] = [];
-  private state: WebGLRenderState = defaultState();
-  private path: WebGLPath = emptyPath();
-  private currentPolygon: Point[] | null = null;
-  private devicePixelRatio = 1;
-  private viewScale = 1;
-  private maxLineWidth = 1;
-  private disposeResize: (() => void) | null = null;
+  readonly #platform: Platform | undefined;
 
-  public constructor(renderTarget: unknown, private readonly platform?: Platform) {
+  public static readonly symbol: symbol = Symbol.for('WebWebGLRenderContext');
+  readonly #target: HTMLCanvasElement;
+  readonly #gl: WebGLRenderingContext;
+  readonly #renderer: WebGLNativeRenderer;
+  readonly #textures: WebGLTextureCache;
+  readonly #measureContext: CanvasRenderingContext2D;
+  readonly #glyphAtlases = new Map<string, WebGLGlyphAtlas>();
+  readonly #stateStack: WebGLRenderState[] = [];
+  #state: WebGLRenderState = defaultState();
+  #path: WebGLPath = emptyPath();
+  #currentPolygon: Point[] | null = null;
+  #devicePixelRatio = 1;
+  #viewScale = 1;
+  #maxLineWidth = 1;
+  #disposeResize: (() => void) | null = null;
+
+  public constructor(renderTarget: unknown, platform?: Platform) {
     super();
-    this.target = renderTarget as HTMLCanvasElement;
-    const ownerDocument = this.target.ownerDocument;
+    this.#platform = platform;
+    this.#target = renderTarget as HTMLCanvasElement;
+    const ownerDocument = this.#target.ownerDocument;
     if (!ownerDocument) throw new SearError('WebWebGLRenderContext requires a canvas owned by a document.');
-    const gl = this.target.getContext('webgl', {
+    const gl = this.#target.getContext('webgl', {
       alpha: true,
       antialias: true,
       depth: false,
@@ -74,12 +77,12 @@ export class WebWebGLRenderContext extends RenderContext {
       stencil: true,
     });
     if (!gl) throw new SearError('WebGLRenderingContext not found');
-    this.gl = gl;
-    this.renderer = new WebGLNativeRenderer(gl);
-    this.textures = new WebGLTextureCache(gl);
+    this.#gl = gl;
+    this.#renderer = new WebGLNativeRenderer(gl);
+    this.#textures = new WebGLTextureCache(gl);
     const measureContext = ownerDocument.createElement('canvas').getContext('2d', { willReadFrequently: false });
     if (!measureContext) throw new SearError('WebWebGLRenderContext could not create a text measurer.');
-    this.measureContext = measureContext;
+    this.#measureContext = measureContext;
   }
 
   override requiresFrameRebuild(): boolean {
@@ -95,168 +98,168 @@ export class WebWebGLRenderContext extends RenderContext {
   }
 
   override beginFrame(): void {
-    this.renderer.clear({ x: 0, y: 0, width: this.target.width, height: this.target.height });
+    this.#renderer.clear({ x: 0, y: 0, width: this.#target.width, height: this.#target.height });
     this.isDrawn = false;
   }
 
   override initialize(scale: number = 1): void {
-    this.target.setAttribute('data-symbol', RenderContext.symbol.toString());
-    this.target.setAttribute('data-renderer', 'webgl-native');
-    const width = this.target.clientWidth || Math.round(this.target.width / scale) || 1;
-    const height = this.target.clientHeight || Math.round(this.target.height / scale) || 1;
+    this.#target.setAttribute('data-symbol', RenderContext.symbol.toString());
+    this.#target.setAttribute('data-renderer', 'webgl-native');
+    const width = this.#target.clientWidth || Math.round(this.#target.width / scale) || 1;
+    const height = this.#target.clientHeight || Math.round(this.#target.height / scale) || 1;
     this.resize(width, height, scale);
     this.setLineWidth(1);
   }
 
-  override resize(width: number, height: number, scale: number = this.devicePixelRatio): void {
-    this.devicePixelRatio = scale;
-    this.target.width = Math.max(Math.round(width * scale), 1);
-    this.target.height = Math.max(Math.round(height * scale), 1);
-    this.renderer.resize(this.target.width, this.target.height);
-    this.renderer.clear({ x: 0, y: 0, width: this.target.width, height: this.target.height });
+  override resize(width: number, height: number, scale: number = this.#devicePixelRatio): void {
+    this.#devicePixelRatio = scale;
+    this.#target.width = Math.max(Math.round(width * scale), 1);
+    this.#target.height = Math.max(Math.round(height * scale), 1);
+    this.#renderer.resize(this.#target.width, this.#target.height);
+    this.#renderer.clear({ x: 0, y: 0, width: this.#target.width, height: this.#target.height });
     this.isDrawn = false;
   }
 
   override setViewScale(scale: number): void {
-    this.viewScale = scale;
+    this.#viewScale = scale;
     this.isDrawn = false;
   }
   override getViewScale(): number {
-    return this.viewScale;
+    return this.#viewScale;
   }
   override getRasterScale(): number {
-    return this.devicePixelRatio;
+    return this.#devicePixelRatio;
   }
   override getRenderTarget(): HTMLCanvasElement {
-    return this.target;
+    return this.#target;
   }
   override setAttribute(name: string, value: string): void {
-    this.target.setAttribute(name, value);
+    this.#target.setAttribute(name, value);
   }
   override getAttribute(name: string): string {
-    return this.target.getAttribute(name) || '';
+    return this.#target.getAttribute(name) || '';
   }
   override getRoot(): HTMLCanvasElement {
-    return this.target;
+    return this.#target;
   }
   override save(): void {
-    this.stateStack.push(cloneState(this.state));
+    this.#stateStack.push(cloneState(this.#state));
   }
   override restore(): void {
-    this.state = this.stateStack.pop() ?? this.state;
+    this.#state = this.#stateStack.pop() ?? this.#state;
   }
   override beginPath(): void {
-    this.path = emptyPath();
-    this.currentPolygon = null;
+    this.#path = emptyPath();
+    this.#currentPolygon = null;
   }
   override closePath(): void {
-    const polygon = this.currentPolygon;
+    const polygon = this.#currentPolygon;
     if (polygon && polygon.length > 1) polygon.push(polygon[0]!);
   }
 
   override fill(): void {
     const vertices: number[] = [];
-    for (const rectangle of this.path.rectangles) appendFan(vertices, rectangle);
-    for (const polygon of this.path.polygons) appendFan(vertices, polygon);
-    this.renderer.solid(vertices, this.state.fill, this.state.clip);
-    this.didDraw(vertices.length > 0);
+    for (const rectangle of this.#path.rectangles) appendFan(vertices, rectangle);
+    for (const polygon of this.#path.polygons) appendFan(vertices, polygon);
+    this.#renderer.solid(vertices, this.#state.fill, this.#state.clip);
+    this.#didDraw(vertices.length > 0);
   }
 
   override stroke(): void {
     const vertices: number[] = [];
-    for (const rectangle of this.path.rectangles)
-      appendStroke(vertices, [...rectangle, rectangle[0]!], this.rasterLineWidth(), this.rasterDash());
-    for (const polygon of this.path.polygons)
-      appendStroke(vertices, polygon, this.rasterLineWidth(), this.rasterDash());
-    this.renderer.solid(vertices, this.state.stroke, this.state.clip);
-    this.didDraw(vertices.length > 0);
+    for (const rectangle of this.#path.rectangles)
+      appendStroke(vertices, [...rectangle, rectangle[0]!], this.#rasterLineWidth(), this.#rasterDash());
+    for (const polygon of this.#path.polygons)
+      appendStroke(vertices, polygon, this.#rasterLineWidth(), this.#rasterDash());
+    this.#renderer.solid(vertices, this.#state.stroke, this.#state.clip);
+    this.#didDraw(vertices.length > 0);
   }
 
   override rect(x: number, y: number, width: number, height: number): void {
-    this.path.rectangles.push([
-      this.transformPoint(x, y),
-      this.transformPoint(x + width, y),
-      this.transformPoint(x + width, y + height),
-      this.transformPoint(x, y + height),
+    this.#path.rectangles.push([
+      this.#transformPoint(x, y),
+      this.#transformPoint(x + width, y),
+      this.#transformPoint(x + width, y + height),
+      this.#transformPoint(x, y + height),
     ]);
   }
 
   override clearRect(x: number, y: number, width: number, height: number): void {
     const rectangle = [
-      this.transformPoint(x, y),
-      this.transformPoint(x + width, y),
-      this.transformPoint(x + width, y + height),
-      this.transformPoint(x, y + height),
+      this.#transformPoint(x, y),
+      this.#transformPoint(x + width, y),
+      this.#transformPoint(x + width, y + height),
+      this.#transformPoint(x, y + height),
     ];
-    const clip = intersectClips(this.state.clip, bounds(rectangle));
-    if (clip) this.renderer.clear(clip);
+    const clip = intersectClips(this.#state.clip, bounds(rectangle));
+    if (clip) this.#renderer.clear(clip);
   }
 
   override strokeRect(x: number, y: number, width: number, height: number): void {
     const points = [
-      this.transformPoint(x, y),
-      this.transformPoint(x + width, y),
-      this.transformPoint(x + width, y + height),
-      this.transformPoint(x, y + height),
+      this.#transformPoint(x, y),
+      this.#transformPoint(x + width, y),
+      this.#transformPoint(x + width, y + height),
+      this.#transformPoint(x, y + height),
     ];
     const vertices: number[] = [];
-    appendStroke(vertices, [...points, points[0]!], this.rasterLineWidth(), this.rasterDash());
-    this.renderer.solid(vertices, this.state.stroke, this.state.clip);
-    this.didDraw(vertices.length > 0);
+    appendStroke(vertices, [...points, points[0]!], this.#rasterLineWidth(), this.#rasterDash());
+    this.#renderer.solid(vertices, this.#state.stroke, this.#state.clip);
+    this.#didDraw(vertices.length > 0);
   }
 
   override setLineWidth(width: number): void {
     // Match CanvasRenderingContext2D: zero, negative, NaN, and infinite values
     // are ignored so callers keep the current positive line width.
     if (!Number.isFinite(width) || width <= 0) return;
-    this.state = { ...this.state, lineWidth: width };
-    this.maxLineWidth = Math.max(this.maxLineWidth, width);
+    this.#state = { ...this.#state, lineWidth: width };
+    this.#maxLineWidth = Math.max(this.#maxLineWidth, width);
   }
   override getLineWidth(): number {
-    return this.state.lineWidth;
+    return this.#state.lineWidth;
   }
   override getMaxLineWidth(): number {
-    return this.maxLineWidth;
+    return this.#maxLineWidth;
   }
   override setLineDash(segments: number[]): void {
-    this.state = { ...this.state, lineDash: segments.filter((value) => value > 0) };
+    this.#state = { ...this.#state, lineDash: segments.filter((value) => value > 0) };
   }
   override setStrokeStyle(strokeStyle: RenderPaint): void {
-    this.state = { ...this.state, stroke: parseWebGLColor(strokeStyle) };
+    this.#state = { ...this.#state, stroke: parseWebGLColor(strokeStyle) };
   }
   override setFillStyle(fillStyle: RenderPaint): void {
-    this.state = { ...this.state, fill: parseWebGLColor(fillStyle) };
+    this.#state = { ...this.#state, fill: parseWebGLColor(fillStyle) };
   }
   override clip(): void {
-    const points = [...this.path.rectangles.flat(), ...this.path.polygons.flat()];
-    if (points.length > 0) this.state = { ...this.state, clip: intersectClips(this.state.clip, bounds(points)) };
+    const points = [...this.#path.rectangles.flat(), ...this.#path.polygons.flat()];
+    if (points.length > 0) this.#state = { ...this.#state, clip: intersectClips(this.#state.clip, bounds(points)) };
   }
   override moveTo(x: number, y: number): void {
-    const polygon = [this.transformPoint(x, y)];
-    this.path.polygons.push(polygon);
-    this.currentPolygon = polygon;
+    const polygon = [this.#transformPoint(x, y)];
+    this.#path.polygons.push(polygon);
+    this.#currentPolygon = polygon;
   }
   override lineTo(x: number, y: number): void {
-    if (!this.currentPolygon) this.moveTo(x, y);
-    else this.currentPolygon.push(this.transformPoint(x, y));
+    if (!this.#currentPolygon) this.moveTo(x, y);
+    else this.#currentPolygon.push(this.#transformPoint(x, y));
   }
   override setFont(font: string): void {
-    this.state = { ...this.state, font };
-    this.measureContext.font = font;
+    this.#state = { ...this.#state, font };
+    this.#measureContext.font = font;
   }
 
   override fillText(text: string, x: number, y: number, maxWidth?: number): void {
     if (!text) return;
     const measuredWidth = this.measureText(text).width;
-    const rasterScale = Math.min(this.rasterCoordinateScale(), 2032 / Math.max(1, measuredWidth));
-    const scaledFont = scaleFont(this.state.font, rasterScale);
+    const rasterScale = Math.min(this.#rasterCoordinateScale(), 2032 / Math.max(1, measuredWidth));
+    const scaledFont = scaleFont(this.#state.font, rasterScale);
     const preserveColor = /\p{Extended_Pictographic}|\p{Emoji_Presentation}|\uFE0F|\u20E3/u.test(text);
-    const color = preserveColor ? this.state.fill : undefined;
+    const color = preserveColor ? this.#state.fill : undefined;
     const atlasKey = `${scaledFont}\0${color?.join(',') ?? ''}`;
-    let atlas = this.glyphAtlases.get(atlasKey);
+    let atlas = this.#glyphAtlases.get(atlasKey);
     if (!atlas) {
-      atlas = new WebGLGlyphAtlas(this.gl, scaledFont, this.target.ownerDocument, color);
-      this.glyphAtlases.set(atlasKey, atlas);
+      atlas = new WebGLGlyphAtlas(this.#gl, scaledFont, this.#target.ownerDocument, color);
+      this.#glyphAtlases.set(atlasKey, atlas);
     }
     const widthScale = maxWidth && measuredWidth > maxWidth ? maxWidth / measuredWidth : 1;
     const vertices: number[] = [];
@@ -266,13 +269,13 @@ export class WebWebGLRenderContext extends RenderContext {
     const right = left + (glyph.width / rasterScale) * widthScale;
     const bottom = top + glyph.height / rasterScale;
     appendTexturedQuad(vertices, [
-      this.transformPoint(left, top),
-      this.transformPoint(right, top),
-      this.transformPoint(right, bottom),
-      this.transformPoint(left, bottom),
+      this.#transformPoint(left, top),
+      this.#transformPoint(right, top),
+      this.#transformPoint(right, bottom),
+      this.#transformPoint(left, bottom),
     ], glyph.u0, glyph.v0, glyph.u1, glyph.v1);
-    this.renderer.textured(vertices, atlas.bind(), preserveColor ? [1, 1, 1, 1] : this.state.fill, this.state.clip);
-    this.didDraw(vertices.length > 0);
+    this.#renderer.textured(vertices, atlas.bind(), preserveColor ? [1, 1, 1, 1] : this.#state.fill, this.#state.clip);
+    this.#didDraw(vertices.length > 0);
   }
 
   override measureText(text: string): {
@@ -282,10 +285,10 @@ export class WebWebGLRenderContext extends RenderContext {
     fontDescent?: number;
     fontLineGap?: number;
   } {
-    this.measureContext.font = this.state.font;
-    const metrics = this.measureContext.measureText(text);
+    this.#measureContext.font = this.#state.font;
+    const metrics = this.#measureContext.measureText(text);
     const fontAscent =
-      finite(metrics.fontBoundingBoxAscent) ?? finite(metrics.actualBoundingBoxAscent) ?? fontSize(this.state.font);
+      finite(metrics.fontBoundingBoxAscent) ?? finite(metrics.actualBoundingBoxAscent) ?? fontSize(this.#state.font);
     const fontDescent = finite(metrics.fontBoundingBoxDescent) ?? finite(metrics.actualBoundingBoxDescent) ?? 0;
     return { width: metrics.width, height: fontAscent + fontDescent, fontAscent, fontDescent };
   }
@@ -294,13 +297,13 @@ export class WebWebGLRenderContext extends RenderContext {
     const rasterWidth = Math.max(1, Math.round(width));
     const rasterHeight = Math.max(1, Math.round(height));
     const pixels = new Uint8Array(rasterWidth * rasterHeight * 4);
-    this.gl.readPixels(
+    this.#gl.readPixels(
       Math.round(x),
-      this.target.height - Math.round(y + height),
+      this.#target.height - Math.round(y + height),
       rasterWidth,
       rasterHeight,
-      this.gl.RGBA,
-      this.gl.UNSIGNED_BYTE,
+      this.#gl.RGBA,
+      this.#gl.UNSIGNED_BYTE,
       pixels,
     );
     const data: [number, number, number, number][] = [];
@@ -313,7 +316,7 @@ export class WebWebGLRenderContext extends RenderContext {
   }
 
   override putImageData(imageData: RenderImageData, x: number, y: number): void {
-    const gl = this.gl;
+    const gl = this.#gl;
     const texture = gl.createTexture();
     if (!texture) throw new SearError('WebWebGLRenderContext could not create an image-data texture.');
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -346,9 +349,9 @@ export class WebWebGLRenderContext extends RenderContext {
       1,
       1,
     );
-    this.renderer.textured(vertices, texture, [1, 1, 1, 1], null);
+    this.#renderer.textured(vertices, texture, [1, 1, 1, 1], null);
     gl.deleteTexture(texture);
-    this.didDraw(true);
+    this.#didDraw(true);
   }
 
   override drawImage(image: RenderImageSource, x: number, y: number): void;
@@ -375,10 +378,10 @@ export class WebWebGLRenderContext extends RenderContext {
     sWidth?: number,
     sHeight?: number,
   ): void {
-    const entry = this.textures.get(image);
-    const destinationWidth = width ?? entry.width / this.rasterCoordinateScale();
-    const destinationHeight = height ?? entry.height / this.rasterCoordinateScale();
-    const sourceScale = this.rasterCoordinateScale();
+    const entry = this.#textures.get(image);
+    const destinationWidth = width ?? entry.width / this.#rasterCoordinateScale();
+    const destinationHeight = height ?? entry.height / this.#rasterCoordinateScale();
+    const sourceScale = this.#rasterCoordinateScale();
     const sourceX = sx === undefined ? 0 : sx * sourceScale;
     const sourceY = sy === undefined ? 0 : sy * sourceScale;
     const sourceWidth = sWidth === undefined ? entry.width : sWidth * sourceScale;
@@ -387,97 +390,97 @@ export class WebWebGLRenderContext extends RenderContext {
     appendTexturedQuad(
       vertices,
       [
-        this.transformPoint(x, y),
-        this.transformPoint(x + destinationWidth, y),
-        this.transformPoint(x + destinationWidth, y + destinationHeight),
-        this.transformPoint(x, y + destinationHeight),
+        this.#transformPoint(x, y),
+        this.#transformPoint(x + destinationWidth, y),
+        this.#transformPoint(x + destinationWidth, y + destinationHeight),
+        this.#transformPoint(x, y + destinationHeight),
       ],
       sourceX / entry.width,
       sourceY / entry.height,
       (sourceX + sourceWidth) / entry.width,
       (sourceY + sourceHeight) / entry.height,
     );
-    this.renderer.textured(vertices, entry.texture, [1, 1, 1, 1], this.state.clip);
-    this.didDraw(true);
+    this.#renderer.textured(vertices, entry.texture, [1, 1, 1, 1], this.#state.clip);
+    this.#didDraw(true);
   }
 
   override translate(x: number, y: number): void {
-    this.state = { ...this.state, transform: multiply(this.state.transform, [1, 0, 0, 1, x, y]) };
+    this.#state = { ...this.#state, transform: multiply(this.#state.transform, [1, 0, 0, 1, x, y]) };
   }
   override resetTransform(): void {
-    this.state = { ...this.state, transform: identityTransform() };
+    this.#state = { ...this.#state, transform: identityTransform() };
   }
   override setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void {
-    this.state = { ...this.state, transform: [a, b, c, d, e, f] };
+    this.#state = { ...this.#state, transform: [a, b, c, d, e, f] };
   }
   override cloneNode(): WebWebGLRenderContext {
-    const clone = this.target.cloneNode() as HTMLCanvasElement;
-    clone.width = this.target.width;
-    clone.height = this.target.height;
-    return new WebWebGLRenderContext(clone, this.platform);
+    const clone = this.#target.cloneNode() as HTMLCanvasElement;
+    clone.width = this.#target.width;
+    clone.height = this.#target.height;
+    return new WebWebGLRenderContext(clone, this.#platform);
   }
   override createHitNode(): WebCanvasRenderContext {
-    const canvas = this.target.ownerDocument.createElement('canvas');
-    canvas.width = this.target.width;
-    canvas.height = this.target.height;
-    return new WebCanvasRenderContext(canvas, true, this.platform);
+    const canvas = this.#target.ownerDocument.createElement('canvas');
+    canvas.width = this.#target.width;
+    canvas.height = this.#target.height;
+    return new WebCanvasRenderContext(canvas, true, this.#platform);
   }
   override addEventListener(type: string, callback: (event: EventWithOffset) => void): () => void {
     return (
-      this.platform?.addEventListener(this.target, type, (event) => callback(event as EventWithOffset)) ?? (() => {})
+      this.#platform?.addEventListener(this.#target, type, (event) => callback(event as EventWithOffset)) ?? (() => {})
     );
   }
   override addClickEventListener(callback: (event: EventWithOffset) => void): void {
     this.addEventListener(PlatformEventName.Click, callback);
   }
   override removeClickEventListener(): void {
-    throw this.unsupportedRemoval('removeClickEventListener');
+    throw this.#unsupportedRemoval('removeClickEventListener');
   }
   override addMouseDownEventListener(callback: (event: EventWithOffset) => void): void {
     this.addEventListener(PlatformEventName.MouseDown, callback);
   }
   override removeMouseDownEventListener(): void {
-    throw this.unsupportedRemoval('removeMouseDownEventListener');
+    throw this.#unsupportedRemoval('removeMouseDownEventListener');
   }
   override addMouseMoveEventListener(callback: (event: EventWithOffset) => void): void {
     this.addEventListener(PlatformEventName.MouseMove, callback);
   }
   override removeMouseMoveEventListener(): void {
-    throw this.unsupportedRemoval('removeMouseMoveEventListener');
+    throw this.#unsupportedRemoval('removeMouseMoveEventListener');
   }
   override addMouseUpEventListener(callback: (event: EventWithOffset) => void): void {
     this.addEventListener(PlatformEventName.MouseUp, callback);
   }
   override removeMouseUpEventListener(): void {
-    throw this.unsupportedRemoval('removeMouseUpEventListener');
+    throw this.#unsupportedRemoval('removeMouseUpEventListener');
   }
   override addResizeListener(callback: () => void): void {
-    this.disposeResize?.();
-    this.disposeResize = this.platform?.observeResize(this.target, callback) ?? null;
+    this.#disposeResize?.();
+    this.#disposeResize = this.#platform?.observeResize(this.#target, callback) ?? null;
   }
   override removeResizeListener(): void {
-    this.disposeResize?.();
-    this.disposeResize = null;
+    this.#disposeResize?.();
+    this.#disposeResize = null;
   }
 
-  private transformPoint(x: number, y: number): Point {
-    const [a, b, c, d, e, f] = this.state.transform;
-    const scale = this.rasterCoordinateScale();
+  #transformPoint(x: number, y: number): Point {
+    const [a, b, c, d, e, f] = this.#state.transform;
+    const scale = this.#rasterCoordinateScale();
     return [(a * x + c * y + e) * scale, (b * x + d * y + f) * scale];
   }
-  private rasterCoordinateScale(): number {
-    return this.devicePixelRatio * this.viewScale;
+  #rasterCoordinateScale(): number {
+    return this.#devicePixelRatio * this.#viewScale;
   }
-  private rasterLineWidth(): number {
-    return Math.max(0, this.state.lineWidth * this.rasterCoordinateScale());
+  #rasterLineWidth(): number {
+    return Math.max(0, this.#state.lineWidth * this.#rasterCoordinateScale());
   }
-  private rasterDash(): readonly number[] {
-    return this.state.lineDash.map((value) => value * this.rasterCoordinateScale());
+  #rasterDash(): readonly number[] {
+    return this.#state.lineDash.map((value) => value * this.#rasterCoordinateScale());
   }
-  private didDraw(drawn: boolean): void {
+  #didDraw(drawn: boolean): void {
     if (drawn) this.isDrawn = true;
   }
-  private unsupportedRemoval(method: string): SearError {
+  #unsupportedRemoval(method: string): SearError {
     return new SearError(
       `WebWebGLRenderContext.${method} is not supported; use Platform-owned event wiring for disposable listeners.`,
     );

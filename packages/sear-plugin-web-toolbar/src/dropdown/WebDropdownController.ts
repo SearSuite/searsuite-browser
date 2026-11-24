@@ -16,36 +16,49 @@ import {
 } from '@searsuite/sear-plugin-dropdown';
 /** Host picker, keyboard scope and configuration entry for one mounted Sheet. */
 export class WebDropdownController {
-  private panel: HTMLElement | null = null;
-  private ownsFocus = false;
-  private focusFrame: number | null = null;
-  private disposed = false;
-  private readonly controls: WebControlEventScope;
-  private readonly disposers: (() => void)[] = [];
+  readonly #surface: unknown;
+  readonly #platform: Platform;
+  readonly #commands: SheetCommandBus;
+  readonly #queries: SheetQueryRegistry;
+  readonly #configure: (ruleId?: string) => void;
+  readonly #textInput: TextInput | undefined;
+
+  #panel: HTMLElement | null = null;
+  #ownsFocus = false;
+  #focusFrame: number | null = null;
+  #disposed = false;
+  readonly #controls: WebControlEventScope;
+  readonly #disposers: (() => void)[] = [];
   /** Binds typed interaction requests; persistent rule editing stays in the validation dialog. */
   constructor(
     button: HTMLButtonElement,
-    private readonly surface: unknown,
-    private readonly platform: Platform,
-    private readonly commands: SheetCommandBus,
-    private readonly queries: SheetQueryRegistry,
+    surface: unknown,
+    platform: Platform,
+    commands: SheetCommandBus,
+    queries: SheetQueryRegistry,
     observations: ObservationRegistry,
-    private readonly configure: (ruleId?: string) => void,
-    private readonly textInput?: TextInput,
+    configure: (ruleId?: string) => void,
+    textInput?: TextInput,
   ) {
-    this.controls = new WebControlEventScope(platform);
+    this.#surface = surface;
+    this.#platform = platform;
+    this.#commands = commands;
+    this.#queries = queries;
+    this.#configure = configure;
+    this.#textInput = textInput;
+    this.#controls = new WebControlEventScope(platform);
     button.disabled = false;
     button.classList.remove('disabled');
     button.title = 'Dropdown (Alt + Down to open options)';
-    this.disposers.push(
+    this.#disposers.push(
       platform.addEventListener(button, 'click', () => {
-        if (this.commit()) this.configure(this.activeRuleId());
+        if (this.#commit()) this.#configure(this.#activeRuleId());
       }),
       observations.subscribe(DropdownPickerRequest, (input) => this.open(input)),
       platform.addEventListener(document, 'focusin', (event) => {
         const target = (event as FocusEvent).target;
-        if (this.panel && target instanceof Element && target.id === 'searTextInput') {
-          this.panel.querySelector<HTMLInputElement>('[aria-label="Search dropdown options"]')?.focus();
+        if (this.#panel && target instanceof Element && target.id === 'searTextInput') {
+          this.#panel.querySelector<HTMLInputElement>('[aria-label="Search dropdown options"]')?.focus();
         }
       }),
       platform.addEventListener(
@@ -53,8 +66,8 @@ export class WebDropdownController {
         'mousedown',
         (event) => {
           const target = (event as MouseEvent).target;
-          this.ownsFocus = target instanceof Node && surface instanceof Node && surface.contains(target);
-          if (this.panel && target instanceof Node && !this.panel.contains(target)) this.close();
+          this.#ownsFocus = target instanceof Node && surface instanceof Node && surface.contains(target);
+          if (this.#panel && target instanceof Node && !this.#panel.contains(target)) this.#close();
         },
         { capture: true },
       ),
@@ -63,15 +76,15 @@ export class WebDropdownController {
         'keydown',
         (event) => {
           const key = event as KeyboardEvent;
-          if (key.key === 'Escape' && this.panel) {
+          if (key.key === 'Escape' && this.#panel) {
             key.preventDefault();
             key.stopPropagation();
-            this.close(true);
+            this.#close(true);
             return;
           }
-          if (this.panel && key.target instanceof Node && this.panel.contains(key.target)) {
+          if (this.#panel && key.target instanceof Node && this.#panel.contains(key.target)) {
             if (key.key === 'ArrowDown' || key.key === 'ArrowUp') {
-              const items = Array.from(this.panel.querySelectorAll<HTMLButtonElement>('[role="option"]'));
+              const items = Array.from(this.#panel.querySelectorAll<HTMLButtonElement>('[role="option"]'));
               if (items.length) {
                 const index = items.indexOf(document.activeElement as HTMLButtonElement);
                 const next =
@@ -90,7 +103,7 @@ export class WebDropdownController {
           if (
             key.defaultPrevented ||
             key.repeat ||
-            !this.ownsFocus ||
+            !this.#ownsFocus ||
             key.key !== 'ArrowDown' ||
             !key.altKey ||
             key.ctrlKey ||
@@ -105,38 +118,38 @@ export class WebDropdownController {
             target.id !== 'searTextInput'
           )
             return;
-          const cell = this.queries.run(GetActiveCell, undefined);
+          const cell = this.#queries.run(GetActiveCell, undefined);
           if (!cell) return;
           const input = { row: cell[0], column: cell[1] };
-          if (!this.queries.run(ReadDropdownCellQuery, input)) return;
+          if (!this.#queries.run(ReadDropdownCellQuery, input)) return;
           key.preventDefault();
           key.stopPropagation();
-          if (!this.commit()) return;
-          this.commands.run(OpenDropdownPickerCommand, input);
+          if (!this.#commit()) return;
+          this.#commands.run(OpenDropdownPickerCommand, input);
         },
         { capture: true },
       ),
     );
   }
-  private commit(): boolean {
-    if (this.queries.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, undefined)) {
-      this.commands.run(CommitCellEditCommand, undefined);
-      return !this.queries.run(IsCellEditingQuery, undefined);
+  #commit(): boolean {
+    if (this.#queries.has(IsCellEditingQuery) && this.#queries.run(IsCellEditingQuery, undefined)) {
+      this.#commands.run(CommitCellEditCommand, undefined);
+      return !this.#queries.run(IsCellEditingQuery, undefined);
     }
     return true;
   }
-  private activeRuleId(): string | undefined {
-    const cell = this.queries.run(GetActiveCell, undefined);
-    return cell ? this.queries.run(ReadDropdownCellQuery, { row: cell[0], column: cell[1] })?.ruleId : undefined;
+  #activeRuleId(): string | undefined {
+    const cell = this.#queries.run(GetActiveCell, undefined);
+    return cell ? this.#queries.run(ReadDropdownCellQuery, { row: cell[0], column: cell[1] })?.ruleId : undefined;
   }
   /** Opens a current, searchable option view; each action rereads the owner state. */
   public open(input: DropdownCellInput): void {
-    if (this.disposed) return;
-    const state = this.queries.run(ReadDropdownCellQuery, input);
+    if (this.#disposed) return;
+    const state = this.#queries.run(ReadDropdownCellQuery, input);
     if (!state) return;
-    this.close();
+    this.#close();
     const panel = document.createElement('section');
-    this.panel = panel;
+    this.#panel = panel;
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Dropdown options');
     panel.style.cssText =
@@ -166,11 +179,11 @@ export class WebDropdownController {
     error.style.color = '#b42318';
     panel.append(error);
     const render = () => {
-      const current = this.queries.run(ReadDropdownCellQuery, input);
+      const current = this.#queries.run(ReadDropdownCellQuery, input);
       const active = document.activeElement;
       const focusedLabel =
         active instanceof Element && list.contains(active) ? active.getAttribute('aria-label') : null;
-      this.controls.release(list);
+      this.#controls.release(list);
       list.replaceChildren();
       if (!current || current.ruleId !== state.ruleId) {
         error.textContent = 'The list has changed. Open it again.';
@@ -189,11 +202,11 @@ export class WebDropdownController {
         item.style.cssText =
           'display:block;text-align:left;width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:5px;margin:4px 0;cursor:pointer;';
         item.style.backgroundColor = option.color ?? '#f8fafc';
-        this.controls.listen(item, 'click', () => {
+        this.#controls.listen(item, 'click', () => {
           try {
-            this.commands.run(PickDropdownOptionCommand, { ...input, ruleId: state.ruleId, label: option.label });
+            this.#commands.run(PickDropdownOptionCommand, { ...input, ruleId: state.ruleId, label: option.label });
             if (state.multiple) render();
-            else this.close(true);
+            else this.#close(true);
           } catch (cause) {
             error.textContent = cause instanceof Error ? cause.message : String(cause);
           }
@@ -211,13 +224,13 @@ export class WebDropdownController {
         list.append(empty);
       }
     };
-    this.controls.listen(search, 'input', render);
+    this.#controls.listen(search, 'input', render);
     const action = (label: string, run: () => void) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = label;
       button.style.cssText = 'padding:6px 10px;margin:8px 5px 0 0';
-      this.controls.listen(button, 'click', () => {
+      this.#controls.listen(button, 'click', () => {
         try {
           run();
         } catch (cause) {
@@ -227,41 +240,41 @@ export class WebDropdownController {
       panel.append(button);
     };
     action('Clear selection', () => {
-      this.commands.run(ClearDropdownValueCommand, input);
+      this.#commands.run(ClearDropdownValueCommand, input);
       render();
     });
     action('Edit dropdown list', () => {
-      this.close();
-      this.configure(state.ruleId);
+      this.#close();
+      this.#configure(state.ruleId);
     });
-    action('Close dropdown options', () => this.close(true));
+    action('Close dropdown options', () => this.#close(true));
     document.body.append(panel);
     render();
     search.focus();
-    this.focusFrame = this.platform.requestAnimationFrame(() => {
-      this.focusFrame = null;
-      if (this.panel === panel) search.focus();
+    this.#focusFrame = this.#platform.requestAnimationFrame(() => {
+      this.#focusFrame = null;
+      if (this.#panel === panel) search.focus();
     });
   }
-  private close(restoreFocus = false): void {
-    const wasOpen = this.panel !== null;
-    if (this.focusFrame !== null) this.platform.cancelAnimationFrame(this.focusFrame);
-    this.focusFrame = null;
-    this.controls.clear();
-    this.panel?.remove();
-    this.panel = null;
-    if (wasOpen && restoreFocus && !this.disposed) {
-      if (this.textInput) {
-        this.textInput.startListener();
-        this.ownsFocus = true;
-      } else this.ownsFocus = focusWebSheetSurface(this.surface);
+  #close(restoreFocus = false): void {
+    const wasOpen = this.#panel !== null;
+    if (this.#focusFrame !== null) this.#platform.cancelAnimationFrame(this.#focusFrame);
+    this.#focusFrame = null;
+    this.#controls.clear();
+    this.#panel?.remove();
+    this.#panel = null;
+    if (wasOpen && restoreFocus && !this.#disposed) {
+      if (this.#textInput) {
+        this.#textInput.startListener();
+        this.#ownsFocus = true;
+      } else this.#ownsFocus = focusWebSheetSurface(this.#surface);
     }
   }
   /** Removes all scoped listeners and transient controls before editor teardown. */
   public destroy(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-    this.disposers.reverse().forEach((dispose) => dispose());
-    this.close();
+    if (this.#disposed) return;
+    this.#disposed = true;
+    this.#disposers.reverse().forEach((dispose) => dispose());
+    this.#close();
   }
 }

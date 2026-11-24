@@ -30,57 +30,59 @@ enum HELPER {
 
 /** Experimental Web-backed render context used for element-based rendering experiments. */
 export class WebRenderContext extends RenderContext {
+  readonly #platform: Platform | undefined;
+
   /** @inheritdoc */
   setViewScale(_scale: number): void {
-    this.unsupported('setViewScale');
+    this.#unsupported('setViewScale');
   }
   /** @inheritdoc */
   getViewScale(): number {
-    this.unsupported('getViewScale');
+    this.#unsupported('getViewScale');
   }
   /** @inheritdoc */
   getRasterScale(): number {
-    this.unsupported('getRasterScale');
+    this.#unsupported('getRasterScale');
   }
   /** @inheritdoc */
   getMaxLineWidth(): number {
-    this.unsupported('getMaxLineWidth');
+    this.#unsupported('getMaxLineWidth');
   }
   /** @inheritdoc */
   addEventListener(type: string, callBack: (event: EventWithOffset) => void): () => void {
-    this.unsupported('addEventListener');
+    this.#unsupported('addEventListener');
   }
   /** @inheritdoc */
   setLineWidth(width: number): void {
-    this.unsupported('setLineWidth');
+    this.#unsupported('setLineWidth');
   }
   /** @inheritdoc */
   getLineWidth(): number {
-    this.unsupported('getLineWidth');
+    this.#unsupported('getLineWidth');
   }
   /** @inheritdoc */
   moveTo(x: number, y: number): void {
-    this.unsupported('moveTo');
+    this.#unsupported('moveTo');
   }
   /** @inheritdoc */
   lineTo(x: number, y: number): void {
-    this.unsupported('lineTo');
+    this.#unsupported('lineTo');
   }
   /** @inheritdoc */
   measureText(text: string): { width: number; height: number } {
-    this.unsupported('measureText');
+    this.#unsupported('measureText');
   }
   /** @inheritdoc */
   cloneNode(): RenderContext {
-    this.unsupported('cloneNode');
+    this.#unsupported('cloneNode');
   }
   /** @inheritdoc */
   createHitNode(): RenderContext {
-    this.unsupported('createHitNode');
+    this.#unsupported('createHitNode');
   }
   /** @inheritdoc */
   clip(): void {
-    this.unsupported('clip');
+    this.#unsupported('clip');
   }
   /** @inheritdoc */
   drawImage(image: RenderImageSource, x: number, y: number): void;
@@ -110,7 +112,7 @@ export class WebRenderContext extends RenderContext {
     sWidth?: number,
     sHeight?: number,
   ): void {
-    this.unsupported('drawImage');
+    this.#unsupported('drawImage');
   }
   /** @inheritdoc */
   putImageData(
@@ -118,35 +120,35 @@ export class WebRenderContext extends RenderContext {
     x: number,
     y: number,
   ): void {
-    this.unsupported('putImageData');
+    this.#unsupported('putImageData');
   }
   /** @inheritdoc */
   setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void {
-    this.unsupported('setTransform');
+    this.#unsupported('setTransform');
   }
   /** @inheritdoc */
   translate(x: number, y: number): void {
-    this.unsupported('translate');
+    this.#unsupported('translate');
   }
   /** @inheritdoc */
   resetTransform(): void {
-    this.unsupported('resetTransform');
+    this.#unsupported('resetTransform');
   }
   /** @inheritdoc */
   getRenderTarget(): unknown {
-    this.unsupported('getRenderTarget');
+    this.#unsupported('getRenderTarget');
   }
   /** @inheritdoc */
   setAttribute(name: string, value: string): void {
-    this.unsupported('setAttribute');
+    this.#unsupported('setAttribute');
   }
   /** @inheritdoc */
   getAttribute(name: string): string {
-    this.unsupported('getAttribute');
+    this.#unsupported('getAttribute');
   }
   /** @inheritdoc */
   initialize(): void {
-    this.unsupported('initialize');
+    this.#unsupported('initialize');
   }
   /** @inheritdoc */
   resize(): void {
@@ -155,34 +157,35 @@ export class WebRenderContext extends RenderContext {
   }
   /** @inheritdoc */
   setFont(font: string): void {
-    this.unsupported('setFont');
+    this.#unsupported('setFont');
   }
   /** Virtual path cache collected before a fill or stroke commits DOM elements. */
   cache: Set<HTMLElement>;
 
   /** @inheritdoc */
   addResizeListener(): void {
-    this.unsupported('addResizeListener');
+    this.#unsupported('addResizeListener');
   }
   /** @inheritdoc */
   removeResizeListener(): void {
-    this.unsupported('removeResizeListener');
+    this.#unsupported('removeResizeListener');
   }
   /** Root DOM element that receives generated render elements. */
   root: HTMLDivElement;
   /** DI token for resolving the Web render context. */
   public static readonly symbol: symbol = Symbol.for('WebRenderContext');
-  private lineWidth: number = 0.5;
-  private strokeStyle: RenderPaint = '';
-  private fillStyle: RenderPaint = '';
+  #lineWidth: number = 0.5;
+  #strokeStyle: RenderPaint = '';
+  #fillStyle: RenderPaint = '';
 
-  private unsupported(method: string): never {
+  #unsupported(method: string): never {
     throw new SearError(`WebRenderContext.${method} is not supported by the experimental DOM render target.`);
   }
 
   /** Creates a Web render context attached to the provided container. */
-  constructor(container: HTMLDivElement, private readonly platform?: Platform) {
+  constructor(container: HTMLDivElement, platform?: Platform) {
     super();
+    this.#platform = platform;
     this.root = container;
     // cache dom: simulate virtual path
     this.cache = new Set();
@@ -197,7 +200,7 @@ export class WebRenderContext extends RenderContext {
 
   /** @inheritdoc */
   fillText(text: string, x: number, y: number, maxWidth?: number): void {
-    this.unsupported('fillText');
+    this.#unsupported('fillText');
   }
 
   /** @inheritdoc */
@@ -205,7 +208,6 @@ export class WebRenderContext extends RenderContext {
     return this.root;
   }
 
-  // @WebContext.prototype.clearCache()
   /** @inheritdoc */
   clearRect(x: number, y: number, width: number, height: number): void {
     this.cache.clear();
@@ -236,19 +238,19 @@ export class WebRenderContext extends RenderContext {
     rect.style.height = height + MEASURE.PX;
     rect.style.left = x + MEASURE.PX;
     rect.style.top = y + MEASURE.PX;
-    rect.style.border = this.lineWidth + MEASURE.PX + HELPER.SPACE + ATTRIBUTE.SOLID + HELPER.SPACE + this.strokeStyle;
+    rect.style.border = this.#lineWidth + MEASURE.PX + HELPER.SPACE + ATTRIBUTE.SOLID + HELPER.SPACE + this.#strokeStyle;
 
     this.root.appendChild(rect);
   }
 
   /** @inheritdoc */
   setStrokeStyle(strokeStyle: string) {
-    this.strokeStyle = strokeStyle;
+    this.#strokeStyle = strokeStyle;
   }
 
   /** @inheritdoc */
   setFillStyle(fillStyle: RenderPaint): void {
-    this.fillStyle = fillStyle;
+    this.#fillStyle = fillStyle;
   }
   /** @inheritdoc */
   getImageData(x: number, y: number, width: number, height: number) {
@@ -282,12 +284,10 @@ export class WebRenderContext extends RenderContext {
    */
 
   // #region Virtual Path
-  // @WebContext.prototype.clearCache()
   beginPath(): void {
     this.cache.clear();
   }
 
-  // @WebContext.prototype.clearCache()
   /** @inheritdoc */
   closePath(): void {
     this.cache.clear();
@@ -311,11 +311,11 @@ export class WebRenderContext extends RenderContext {
   /** @inheritdoc */
   fill(): void {
     if (!this.cache.size) {
-      this.platform?.warn('WebRenderContext.fill skipped: no path found.');
+      this.#platform?.warn('WebRenderContext.fill skipped: no path found.');
       return;
     }
     this.cache.forEach((rect) => {
-      rect.style.backgroundColor = this.fillStyle as string;
+      rect.style.backgroundColor = this.#fillStyle as string;
       this.getRoot().appendChild(rect);
     });
   }
@@ -323,12 +323,12 @@ export class WebRenderContext extends RenderContext {
   /** @inheritdoc */
   stroke(): void {
     if (!this.cache.size) {
-      this.platform?.warn('WebRenderContext.stroke skipped: no path found.');
+      this.#platform?.warn('WebRenderContext.stroke skipped: no path found.');
       return;
     }
     const rects = this.cache.forEach((rect) => {
       rect.style.border =
-        this.lineWidth + MEASURE.PX + HELPER.SPACE + ATTRIBUTE.SOLID + HELPER.SPACE + this.strokeStyle;
+        this.#lineWidth + MEASURE.PX + HELPER.SPACE + ATTRIBUTE.SOLID + HELPER.SPACE + this.#strokeStyle;
       this.root.appendChild(rect);
     });
   }
@@ -381,20 +381,5 @@ export class WebRenderContext extends RenderContext {
   // #endregion
 
   // #region util method
-  private clearCache(): MethodDecorator {
-    const context = this;
-    return function clearDomRenderContextMethodCache(
-      _target: object,
-      _propertyKey: string | symbol,
-      descriptor: PropertyDescriptor,
-    ) {
-      const originalMethod = descriptor.value as (...args: unknown[]) => unknown;
-      descriptor.value = function clearCachedDomRenderContextMethod(...args: unknown[]) {
-        context.cache.clear();
-        return originalMethod.apply(context, args);
-      };
-      return descriptor;
-    };
-  }
   // #endregion
 }

@@ -1,3 +1,4 @@
+import { getLargeTranslationNormalization, type Matrix } from './WebRenderTransform';
 import { SearError } from '@searsuite/sear-foundation-error';
 import { PlatformEventName, type Platform } from '@searsuite/sear-foundation-platform';
 import { Injectable } from '@searsuite/sear-foundation-di';
@@ -10,12 +11,8 @@ import {
   type RenderPaint,
 } from '@searsuite/sear-render-context';
 
-// Browser rasterizers lose stroke/text precision when large world coordinates
-// are paired with equally large inverse scroll transforms. Above this render-
-// only threshold, fold translation into draw coordinates before delegating.
-const LARGE_TRANSLATION_THRESHOLD = 1_000_000;
 
-type Matrix = readonly [number, number, number, number, number, number];
+
 
 /**
  * Browser Canvas2D implementation of the platform-neutral RenderContext.
@@ -26,33 +23,36 @@ type Matrix = readonly [number, number, number, number, number, number];
  */
 @Injectable()
 export class WebCanvasRenderContext extends RenderContext {
+  readonly #platform: Platform | undefined;
+
   /** DI token for resolving the visible canvas render context. */
   public static readonly symbol: symbol = Symbol.for('WebCanvasRenderContext');
 
   /** Native Canvas2D context that receives drawing commands. */
-  private context: CanvasRenderingContext2D;
+  #context: CanvasRenderingContext2D;
   /** Raster pixels represented by one host-view unit. */
-  private devicePixelRatio: number = 2;
+  #devicePixelRatio: number = 2;
   /** Logical sheet zoom scale applied on top of raster scale. */
-  private viewScale: number = 1;
+  #viewScale: number = 1;
   /** Largest stroke width seen since construction, used for dirty erase padding. */
-  private maxLineWidth: number = 1;
-  private transform: Matrix = WebCanvasRenderContext.identityTransform();
-  private readonly transformStack: Matrix[] = [];
-  private disposeResize: (() => void) | null = null;
+  #maxLineWidth: number = 1;
+  #transform: Matrix = this.#identityTransform();
+  readonly #transformStack: Matrix[] = [];
+  #disposeResize: (() => void) | null = null;
 
   /**
    * Constructs a Canvas render context from a host canvas.
    * @param renderTarget - HTMLCanvasElement supplied by the host adapter.
    */
-  constructor(renderTarget: unknown, readbackOptimized: boolean = false, private readonly platform?: Platform) {
+  constructor(renderTarget: unknown, readbackOptimized: boolean = false, platform?: Platform) {
     super();
+    this.#platform = platform;
     const canvas = renderTarget as HTMLCanvasElement;
     // Keep visual canvases on the browser's normal accelerated path.  Only the
     // detached hit layer needs frequent synchronous pixel reads.
     const context = canvas.getContext('2d', { willReadFrequently: readbackOptimized });
     if (!context) throw new SearError('CanvasRenderingContext2D not found');
-    this.context = context;
+    this.#context = context;
   }
 
   /**
@@ -60,7 +60,7 @@ export class WebCanvasRenderContext extends RenderContext {
    * @param scale - Device pixel ratio used for backing-store dimensions.
    */
   override initialize(scale: number): void {
-    const { canvas } = this.context;
+    const { canvas } = this.#context;
     canvas.setAttribute('data-symbol', RenderContext.symbol.toString());
     // Off-screen and hit canvases are detached clones, so their
     // clientWidth/clientHeight are zero. Preserve the source canvas's
@@ -77,12 +77,12 @@ export class WebCanvasRenderContext extends RenderContext {
    * @param height - Host-view height.
    * @param scale - Raster scale to apply to the backing store.
    */
-  override resize(width: number, height: number, scale: number = this.devicePixelRatio): void {
-    this.devicePixelRatio = scale;
-    const { canvas } = this.context;
+  override resize(width: number, height: number, scale: number = this.#devicePixelRatio): void {
+    this.#devicePixelRatio = scale;
+    const { canvas } = this.#context;
     canvas.width = Math.max(Math.round(width * scale), 1);
     canvas.height = Math.max(Math.round(height * scale), 1);
-    this.applyNativeTransform(this.transform);
+    this.#applyNativeTransform(this.#transform);
     this.isDrawn = false;
   }
 
@@ -91,37 +91,37 @@ export class WebCanvasRenderContext extends RenderContext {
    * @param scale - New view scale.
    */
   override setViewScale(scale: number): void {
-    this.viewScale = scale;
+    this.#viewScale = scale;
     this.isDrawn = false;
   }
 
   /** Returns the logical view scale. */
   override getViewScale(): number {
-    return this.viewScale;
+    return this.#viewScale;
   }
 
   /** Returns the host-view to raster scale, excluding logical sheet zoom. */
   override getRasterScale(): number {
     // View scale changes the world-to-view transform, not the view-to-
     // raster ratio. Pointer positions are already in host-view units.
-    return this.devicePixelRatio;
+    return this.#devicePixelRatio;
   }
 
   /** @inheritdoc */
   moveTo(x: number, y: number): void {
-    const point = this.normalizePoint(x, y);
-    this.context.moveTo(point.x, point.y);
+    const point = this.#normalizePoint(x, y);
+    this.#context.moveTo(point.x, point.y);
   }
 
   /** @inheritdoc */
   lineTo(x: number, y: number): void {
-    const point = this.normalizePoint(x, y);
-    this.context.lineTo(point.x, point.y);
+    const point = this.#normalizePoint(x, y);
+    this.#context.lineTo(point.x, point.y);
   }
 
   /** @inheritdoc */
   clip(): void {
-    this.context.clip();
+    this.#context.clip();
   }
   /** @inheritdoc */
   drawImage(image: RenderImageSource, x: number, y: number): void;
@@ -152,20 +152,20 @@ export class WebCanvasRenderContext extends RenderContext {
     sHeight?: number,
   ): void {
     const nativeImage = image as CanvasImageSource;
-    const coordinateScale = this.devicePixelRatio * this.viewScale;
-    const point = this.normalizePoint(x, y);
+    const coordinateScale = this.#devicePixelRatio * this.#viewScale;
+    const point = this.#normalizePoint(x, y);
     if (width === void 0 || height === void 0) {
       // 3 parameters: image, x, y
-      this.context.drawImage(nativeImage, point.x, point.y);
+      this.#context.drawImage(nativeImage, point.x, point.y);
     } else if (sx === void 0 || sy === void 0 || sWidth === void 0 || sHeight === void 0) {
       // 5 parameters: image, x, y, width, height
-      this.context.drawImage(nativeImage, point.x, point.y, width * coordinateScale, height * coordinateScale);
+      this.#context.drawImage(nativeImage, point.x, point.y, width * coordinateScale, height * coordinateScale);
     } else {
       // 9 parameters: image, x, y, width, height, sx, sy, sWidth, sHeight
       // Source coordinates address the backing store directly, while the
       // destination coordinates are transformed by the active context.
       // They therefore need the same CSS-to-backing-store conversion.
-      this.context.drawImage(
+      this.#context.drawImage(
         nativeImage,
         sx * coordinateScale,
         sy * coordinateScale,
@@ -191,7 +191,7 @@ export class WebCanvasRenderContext extends RenderContext {
     y: number,
   ): void {
     const imageDataObj = new ImageData(new Uint8ClampedArray(imageData.data[0]), imageData.width, imageData.height);
-    this.context.putImageData(imageDataObj, x, y);
+    this.#context.putImageData(imageDataObj, x, y);
   }
 
   /**
@@ -201,59 +201,59 @@ export class WebCanvasRenderContext extends RenderContext {
    * not need to reason about canvas backing-store pixels.
    */
   setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void {
-    this.transform = [a, b, c, d, e, f];
-    this.applyNativeTransform(this.transform);
+    this.#transform = [a, b, c, d, e, f];
+    this.#applyNativeTransform(this.#transform);
   }
   /** @inheritdoc */
   translate(x: number, y: number): void {
-    this.transform = WebCanvasRenderContext.multiply(this.transform, [1, 0, 0, 1, x, y]);
-    this.applyNativeTransform(this.transform);
+    this.#transform = this.#multiply(this.#transform, [1, 0, 0, 1, x, y]);
+    this.#applyNativeTransform(this.#transform);
   }
   /** @inheritdoc */
   resetTransform(): void {
-    this.transform = WebCanvasRenderContext.identityTransform();
-    this.context.resetTransform();
+    this.#transform = this.#identityTransform();
+    this.#context.resetTransform();
   }
   /** @inheritdoc */
   getRenderTarget(): HTMLCanvasElement {
-    return this.context.canvas;
+    return this.#context.canvas;
   }
   /** @inheritdoc */
   setAttribute(name: string, value: string): void {
-    this.context.canvas.setAttribute(name, value);
+    this.#context.canvas.setAttribute(name, value);
   }
   /** @inheritdoc */
   getAttribute(name: string): string {
-    return this.context.canvas.getAttribute(name) || '';
+    return this.#context.canvas.getAttribute(name) || '';
   }
 
   /** @inheritdoc */
   public getRoot() {
-    return this.context.canvas;
+    return this.#context.canvas;
   }
 
   //#region status
   /** @inheritdoc */
   save(): void {
-    this.transformStack.push(this.transform);
-    this.context.save();
+    this.#transformStack.push(this.#transform);
+    this.#context.save();
   }
   /** @inheritdoc */
   restore(): void {
-    const previous = this.transformStack.pop();
-    if (previous) this.transform = previous;
-    this.context.restore();
+    const previous = this.#transformStack.pop();
+    if (previous) this.#transform = previous;
+    this.#context.restore();
   }
 
   /** @inheritdoc */
   setFont(font: string): void {
-    this.context.font = font;
+    this.#context.font = font;
   }
   /** @inheritdoc */
   fillText(text: string, x: number, y: number, maxWidth?: number): void {
-    const point = this.normalizePoint(x, y);
-    if (maxWidth) this.context.fillText(text, point.x, point.y, maxWidth);
-    else this.context.fillText(text, point.x, point.y);
+    const point = this.#normalizePoint(x, y);
+    if (maxWidth) this.#context.fillText(text, point.x, point.y, maxWidth);
+    else this.#context.fillText(text, point.x, point.y);
   }
   /** @inheritdoc */
   measureText(text: string): {
@@ -262,7 +262,7 @@ export class WebCanvasRenderContext extends RenderContext {
     fontAscent?: number;
     fontDescent?: number;
   } {
-    const metrics = this.context.measureText(text);
+    const metrics = this.#context.measureText(text);
     const width = Math.max(
       Math.abs(metrics.actualBoundingBoxLeft) + Math.abs(metrics.actualBoundingBoxRight),
       metrics.width,
@@ -290,75 +290,75 @@ export class WebCanvasRenderContext extends RenderContext {
 
   /** @inheritdoc */
   beginPath(): void {
-    this.context.beginPath();
+    this.#context.beginPath();
   }
 
   /** @inheritdoc */
   closePath(): void {
-    this.context.closePath();
+    this.#context.closePath();
   }
 
   /** @inheritdoc */
   fill(): void {
-    this.context.fill();
+    this.#context.fill();
   }
 
   /** @inheritdoc */
   setLineWidth(width: number): void {
-    this.context.lineWidth = width;
-    this.maxLineWidth = Math.max(this.maxLineWidth, width);
+    this.#context.lineWidth = width;
+    this.#maxLineWidth = Math.max(this.#maxLineWidth, width);
   }
   /** @inheritdoc */
   getLineWidth(): number {
-    return this.context.lineWidth;
+    return this.#context.lineWidth;
   }
   /** @inheritdoc */
   getMaxLineWidth(): number {
-    return this.maxLineWidth;
+    return this.#maxLineWidth;
   }
   /** @inheritdoc */
   setLineDash(segments: number[]): void {
-    this.context.setLineDash(segments);
+    this.#context.setLineDash(segments);
   }
 
   /** @inheritdoc */
   stroke(): void {
-    this.context.stroke();
+    this.#context.stroke();
   }
 
   /** @inheritdoc */
   rect(x: number, y: number, width: number, height: number): void {
-    const point = this.normalizePoint(x, y);
-    this.context.rect(point.x, point.y, width, height);
+    const point = this.#normalizePoint(x, y);
+    this.#context.rect(point.x, point.y, width, height);
   }
 
   /** @inheritdoc */
   clearRect(x: number, y: number, width: number, height: number): void {
     // this.context.clearRect(x, y, width * this.devicePixelRatio, height * this.devicePixelRatio);
-    const point = this.normalizePoint(x, y);
-    this.context.clearRect(point.x, point.y, width, height);
+    const point = this.#normalizePoint(x, y);
+    this.#context.clearRect(point.x, point.y, width, height);
   }
 
   /** @inheritdoc */
   strokeRect(x: number, y: number, width: number, height: number): void {
-    const point = this.normalizePoint(x, y);
-    this.context.strokeRect(point.x, point.y, width, height);
+    const point = this.#normalizePoint(x, y);
+    this.#context.strokeRect(point.x, point.y, width, height);
   }
 
   /** @inheritdoc */
   setStrokeStyle(strokeStyle: RenderPaint): void {
-    this.context.strokeStyle = strokeStyle as CanvasRenderingContext2D['strokeStyle'];
+    this.#context.strokeStyle = strokeStyle as CanvasRenderingContext2D['strokeStyle'];
   }
 
   /** @inheritdoc */
   setFillStyle(fillStyle: RenderPaint): void {
-    this.context.fillStyle = fillStyle as CanvasRenderingContext2D['fillStyle'];
+    this.#context.fillStyle = fillStyle as CanvasRenderingContext2D['fillStyle'];
   }
 
   /** @inheritdoc */
   getImageData(x: number, y: number, width: number, height: number) {
     // const imageData = this.context.getImageData(x * CanvasContext.ratio, y * CanvasContext.ratio, width, height);
-    const imageData = this.context.getImageData(x, y, width, height);
+    const imageData = this.#context.getImageData(x, y, width, height);
     return {
       data: [Array.from(imageData.data) as [number, number, number, number]],
       width: imageData.width,
@@ -368,27 +368,27 @@ export class WebCanvasRenderContext extends RenderContext {
 
   /** Creates a detached render context used by hit rendering. */
   createHitNode() {
-    return this.cloneCanvas(true);
+    return this.#cloneCanvas(true);
   }
 
   /** Clones the backing canvas dimensions into a detached WebCanvasRenderContext. */
   cloneNode() {
-    return this.cloneCanvas(false);
+    return this.#cloneCanvas(false);
   }
 
   /** Clones the backing canvas with pixel-readback settings for its intended layer. */
-  private cloneCanvas(readbackOptimized: boolean): WebCanvasRenderContext {
-    const canvas = this.context.canvas.cloneNode() as HTMLCanvasElement;
-    canvas.width = this.context.canvas.width;
-    canvas.height = this.context.canvas.height;
-    return new WebCanvasRenderContext(canvas, readbackOptimized, this.platform);
+  #cloneCanvas(readbackOptimized: boolean): WebCanvasRenderContext {
+    const canvas = this.#context.canvas.cloneNode() as HTMLCanvasElement;
+    canvas.width = this.#context.canvas.width;
+    canvas.height = this.#context.canvas.height;
+    return new WebCanvasRenderContext(canvas, readbackOptimized, this.#platform);
   }
 
-  private static identityTransform(): Matrix {
+  #identityTransform(): Matrix {
     return [1, 0, 0, 1, 0, 0];
   }
 
-  private static multiply(left: Matrix, right: Matrix): Matrix {
+  #multiply(left: Matrix, right: Matrix): Matrix {
     const [a, b, c, d, e, f] = left;
     const [na, nb, nc, nd, ne, nf] = right;
     return [
@@ -401,52 +401,36 @@ export class WebCanvasRenderContext extends RenderContext {
     ];
   }
 
-  private static getLargeTranslationNormalization(
-    transform: Matrix,
-  ): { offsetX: number; offsetY: number; transform: Matrix } | null {
-    const [a, b, c, d, e, f] = transform;
-    if (Math.abs(e) < LARGE_TRANSLATION_THRESHOLD && Math.abs(f) < LARGE_TRANSLATION_THRESHOLD) return null;
-
-    const determinant = a * d - b * c;
-    if (!Number.isFinite(determinant) || determinant === 0) return null;
-
-    const offsetX = (d * e - c * f) / determinant;
-    const offsetY = (-b * e + a * f) / determinant;
-    if (!Number.isFinite(offsetX) || !Number.isFinite(offsetY)) return null;
-
-    return { offsetX, offsetY, transform: [a, b, c, d, 0, 0] };
+  #getTransformNormalization(): { offsetX: number; offsetY: number; transform: Matrix } | null {
+    return getLargeTranslationNormalization(this.#transform);
   }
 
-  private getTransformNormalization(): { offsetX: number; offsetY: number; transform: Matrix } | null {
-    return WebCanvasRenderContext.getLargeTranslationNormalization(this.transform);
-  }
-
-  private normalizePoint(x: number, y: number): { x: number; y: number } {
-    const normalization = this.getTransformNormalization();
+  #normalizePoint(x: number, y: number): { x: number; y: number } {
+    const normalization = this.#getTransformNormalization();
     if (!normalization) return { x, y };
     return { x: x + normalization.offsetX, y: y + normalization.offsetY };
   }
 
-  private applyNativeTransform(transform: Matrix): void {
-    const [a, b, c, d, e, f] = WebCanvasRenderContext.getLargeTranslationNormalization(transform)?.transform ?? transform;
-    this.context.setTransform(
-      a * this.devicePixelRatio * this.viewScale,
+  #applyNativeTransform(transform: Matrix): void {
+    const [a, b, c, d, e, f] = getLargeTranslationNormalization(transform)?.transform ?? transform;
+    this.#context.setTransform(
+      a * this.#devicePixelRatio * this.#viewScale,
       b,
       c,
-      d * this.devicePixelRatio * this.viewScale,
-      e * this.devicePixelRatio * this.viewScale,
-      f * this.devicePixelRatio * this.viewScale,
+      d * this.#devicePixelRatio * this.#viewScale,
+      e * this.#devicePixelRatio * this.#viewScale,
+      f * this.#devicePixelRatio * this.#viewScale,
     );
   }
 
   //#region EventListener
   /** Registers a host pointer event listener on the canvas root. */
   addEventListener(type: string, callBack: (event: EventWithOffset) => void): () => void {
-    return this.bindMouseEvent(type, callBack);
+    return this.#bindMouseEvent(type, callBack);
   }
   /** @inheritdoc */
   addClickEventListener(callBack: (event: EventWithOffset) => void): void {
-    this.bindMouseEvent(PlatformEventName.Click, callBack);
+    this.#bindMouseEvent(PlatformEventName.Click, callBack);
   }
   /** @inheritdoc */
   removeClickEventListener(callBack: (event: EventWithOffset) => void): void {
@@ -457,7 +441,7 @@ export class WebCanvasRenderContext extends RenderContext {
 
   /** @inheritdoc */
   addMouseDownEventListener(callBack: (event: EventWithOffset) => void): void {
-    this.bindMouseEvent(PlatformEventName.MouseDown, callBack);
+    this.#bindMouseEvent(PlatformEventName.MouseDown, callBack);
   }
   /** @inheritdoc */
   removeMouseDownEventListener(callBack: (event: EventWithOffset) => void): void {
@@ -468,7 +452,7 @@ export class WebCanvasRenderContext extends RenderContext {
 
   /** @inheritdoc */
   addMouseMoveEventListener(callBack: (event: EventWithOffset) => void): void {
-    this.bindMouseEvent(PlatformEventName.MouseMove, callBack);
+    this.#bindMouseEvent(PlatformEventName.MouseMove, callBack);
   }
   /** @inheritdoc */
   removeMouseMoveEventListener(callBack: (event: EventWithOffset) => void): void {
@@ -479,7 +463,7 @@ export class WebCanvasRenderContext extends RenderContext {
 
   /** @inheritdoc */
   addMouseUpEventListener(callBack: (event: EventWithOffset) => void): void {
-    this.bindMouseEvent(PlatformEventName.MouseUp, callBack);
+    this.#bindMouseEvent(PlatformEventName.MouseUp, callBack);
   }
   /** @inheritdoc */
   removeMouseUpEventListener(callBack: (event: EventWithOffset) => void): void {
@@ -490,25 +474,25 @@ export class WebCanvasRenderContext extends RenderContext {
 
   /** @inheritdoc */
   addResizeListener(callBack: () => void): void {
-    this.disposeResize?.();
+    this.#disposeResize?.();
     const root = this.getRoot() as HTMLCanvasElement;
-    this.disposeResize =
-      this.platform?.observeResize(root, (size) => {
+    this.#disposeResize =
+      this.#platform?.observeResize(root, (size) => {
         if (size.width !== root.width || size.height !== root.height) callBack();
       }) ?? null;
   }
 
   /** Bridges a native mouse event to the shared EventWithOffset listener shape. */
-  private bindMouseEvent(type: string, callBack: (event: EventWithOffset) => void): () => void {
-    if (this.platform) {
-      return this.platform.addEventListener(this.getRoot(), type, (event) => callBack(event as EventWithOffset));
+  #bindMouseEvent(type: string, callBack: (event: EventWithOffset) => void): () => void {
+    if (this.#platform) {
+      return this.#platform.addEventListener(this.getRoot(), type, (event) => callBack(event as EventWithOffset));
     }
     return function removeCanvasMouseEvent(): void {};
   }
   /** @inheritdoc */
   removeResizeListener(): void {
-    this.disposeResize?.();
-    this.disposeResize = null;
+    this.#disposeResize?.();
+    this.#disposeResize = null;
   }
   //#endregion
 }

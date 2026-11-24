@@ -36,16 +36,16 @@ const STYLE_LABELS: Readonly<Record<SheetBorderLineStyle, string>> = {
 
 /** Border-only host popover; stroke choices remain local until a preset is applied. */
 export class WebCellBorderMenu {
-  private root: HTMLElement | null = null;
-  private anchor: HTMLElement | null = null;
-  private color = '#000000';
-  private style: SheetBorderLineStyle = SheetBorderLineStyle.Thin;
-  private readonly handleOutside = (event: PointerEvent): void => {
-    if (!this.root?.contains(event.target as Node) && !this.anchor?.contains(event.target as Node)) this.close();
+  #root: HTMLElement | null = null;
+  #anchor: HTMLElement | null = null;
+  #color = '#000000';
+  #style: SheetBorderLineStyle = SheetBorderLineStyle.Thin;
+  readonly #handleOutside = (event: PointerEvent): void => {
+    if (!this.#root?.contains(event.target as Node) && !this.#anchor?.contains(event.target as Node)) this.close();
   };
-  private readonly handleKey = (event: KeyboardEvent): void => {
+  readonly #handleKey = (event: KeyboardEvent): void => {
     if (event.key === 'Escape') {
-      const anchor = this.anchor;
+      const anchor = this.#anchor;
       event.stopPropagation();
       this.close();
       anchor?.focus();
@@ -54,14 +54,14 @@ export class WebCellBorderMenu {
 
   /** Opens the border controls next to the toolbar button. */
   public open(anchor: HTMLElement, apply: (preset: SheetBorderPreset, stroke: SheetBorderStroke) => void): void {
-    if (this.root && this.anchor === anchor) {
+    if (this.#root && this.#anchor === anchor) {
       this.close();
       return;
     }
     this.close();
-    this.anchor = anchor;
+    this.#anchor = anchor;
     const root = document.createElement('div');
-    this.root = root;
+    this.#root = root;
     root.className = 'sear-cell-border-menu';
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', 'Cell borders');
@@ -76,7 +76,7 @@ export class WebCellBorderMenu {
       button.dataset['borderPreset'] = item.preset;
       button.innerHTML = item.icon ?? presetIcon(item.segments);
       button.addEventListener('click', () => {
-        apply(item.preset, { color: this.color, style: this.style });
+        apply(item.preset, { color: this.#color, style: this.#style });
         this.close();
       });
       grid.appendChild(button);
@@ -87,10 +87,10 @@ export class WebCellBorderMenu {
     colorLabel.textContent = 'Color';
     const color = document.createElement('input');
     color.type = 'color';
-    color.value = this.color;
+    color.value = this.#color;
     color.setAttribute('aria-label', 'Border color');
     color.addEventListener('input', () => {
-      this.color = color.value;
+      this.#color = color.value;
       updatePreview();
     });
     colorLabel.appendChild(color);
@@ -104,23 +104,23 @@ export class WebCellBorderMenu {
       option.textContent = STYLE_LABELS[style];
       select.appendChild(option);
     }
-    select.value = this.style;
+    select.value = this.#style;
     const preview = document.createElement('div');
     preview.className = 'sear-cell-border-preview';
     const updatePreview = (): void => {
-      const paint = BorderLinePaint[this.style];
+      const paint = BorderLinePaint[this.#style];
       const lines = paint.double ? [8, 12] : [10];
       preview.innerHTML = `<svg width="120" height="20" viewBox="0 0 120 20" aria-hidden="true">${lines
         .map(
           (y) =>
-            `<line x1="4" y1="${y}" x2="116" y2="${y}" stroke="${this.color}" stroke-width="${
+            `<line x1="4" y1="${y}" x2="116" y2="${y}" stroke="${this.#color}" stroke-width="${
               paint.width
             }" stroke-dasharray="${paint.dash.join(' ')}"/>`,
         )
         .join('')}</svg>`;
     };
     select.addEventListener('change', () => {
-      this.style = select.value as SheetBorderLineStyle;
+      this.#style = select.value as SheetBorderLineStyle;
       updatePreview();
     });
     styleLabel.appendChild(select);
@@ -130,19 +130,19 @@ export class WebCellBorderMenu {
     const rect = anchor.getBoundingClientRect();
     root.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - root.offsetWidth - 8))}px`;
     root.style.top = `${Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - root.offsetHeight - 8))}px`;
-    document.addEventListener('pointerdown', this.handleOutside);
-    document.addEventListener('keydown', this.handleKey, true);
+    document.addEventListener('pointerdown', this.#handleOutside);
+    document.addEventListener('keydown', this.#handleKey, true);
     updatePreview();
     grid.querySelector<HTMLButtonElement>('button')?.focus();
   }
 
   /** Removes acquired nodes and event listeners on close or toolbar teardown. */
   public close(): void {
-    this.root?.remove();
-    this.root = null;
-    this.anchor = null;
-    document.removeEventListener('pointerdown', this.handleOutside);
-    document.removeEventListener('keydown', this.handleKey, true);
+    this.#root?.remove();
+    this.#root = null;
+    this.#anchor = null;
+    document.removeEventListener('pointerdown', this.#handleOutside);
+    document.removeEventListener('keydown', this.#handleKey, true);
   }
 }
 

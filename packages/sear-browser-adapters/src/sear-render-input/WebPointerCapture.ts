@@ -17,56 +17,63 @@ interface PointerCaptureSession {
 /** Browser pointer capture adapter that emits render-root view coordinates. */
 @Injectable()
 export class WebPointerCapture extends PointerCapture {
+  readonly #renderContext: RenderContext;
+  readonly #platform: Platform;
+  readonly #eventTarget: unknown;
+
   /** DI token for the host-wide event source, normally `document`. */
   public static readonly eventTargetSymbol: symbol = Symbol.for('WebPointerCapture.EventTarget');
 
-  private session: PointerCaptureSession | null = null;
+  #session: PointerCaptureSession | null = null;
 
   /** Creates one editor-local browser pointer capture adapter. */
   public constructor(
     @Inject(RenderContext.symbol)
-    private readonly renderContext: RenderContext,
+    renderContext: RenderContext,
     @Inject(Platform.symbol)
-    private readonly platform: Platform,
+    platform: Platform,
     @Inject(WebPointerCapture.eventTargetSymbol)
-    private readonly eventTarget: unknown,
+    eventTarget: unknown,
   ) {
     super();
+    this.#renderContext = renderContext;
+    this.#platform = platform;
+    this.#eventTarget = eventTarget;
   }
 
   /** @inheritdoc */
   public override start(handlers: PointerCaptureHandlers): () => void {
     this.stop();
     const id = Symbol('PointerCaptureSession');
-    const disposeMove = this.platform.addEventListener(this.eventTarget, PlatformEventName.MouseMove, (event) => {
-      if (this.session?.id !== id) return;
-      handlers.onMove?.(this.readPoint(event));
+    const disposeMove = this.#platform.addEventListener(this.#eventTarget, PlatformEventName.MouseMove, (event) => {
+      if (this.#session?.id !== id) return;
+      handlers.onMove?.(this.#readPoint(event));
     });
-    const disposeRelease = this.platform.addEventListener(this.eventTarget, PlatformEventName.MouseUp, (event) => {
-      if (this.session?.id !== id) return;
-      const point = this.readPoint(event);
-      this.stopSession(id);
+    const disposeRelease = this.#platform.addEventListener(this.#eventTarget, PlatformEventName.MouseUp, (event) => {
+      if (this.#session?.id !== id) return;
+      const point = this.#readPoint(event);
+      this.#stopSession(id);
       handlers.onRelease(point);
     });
-    this.session = { id, disposers: [disposeMove, disposeRelease] };
-    return () => this.stopSession(id);
+    this.#session = { id, disposers: [disposeMove, disposeRelease] };
+    return () => this.#stopSession(id);
   }
 
   /** @inheritdoc */
   public override stop(): void {
-    if (this.session) this.stopSession(this.session.id);
+    if (this.#session) this.#stopSession(this.#session.id);
   }
 
-  private stopSession(id: symbol): void {
-    const session = this.session;
+  #stopSession(id: symbol): void {
+    const session = this.#session;
     if (!session || session.id !== id) return;
-    this.session = null;
+    this.#session = null;
     for (const dispose of session.disposers) dispose();
   }
 
-  private readPoint(event: unknown): PointerCapturePoint {
+  #readPoint(event: unknown): PointerCapturePoint {
     const pointer = event as WebPointerEventSource;
-    const bounds = this.platform.readViewOffset(this.renderContext.getRoot());
+    const bounds = this.#platform.readViewOffset(this.#renderContext.getRoot());
     return {
       view: {
         x: pointer.clientX - bounds.x,

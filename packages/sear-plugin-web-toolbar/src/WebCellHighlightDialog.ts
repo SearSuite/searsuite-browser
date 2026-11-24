@@ -39,17 +39,29 @@ const styleLabels: Readonly<Record<CellHighlightStyle, string>> = {
 
 /** Host-only editor for plugin-owned conditional highlight rules. */
 export class WebCellHighlightDialog {
-  private root: HTMLElement | null = null;
+  readonly #commands: SheetCommandBus;
+  readonly #queries: SheetQueryRegistry;
+  readonly #getSelection: () => Selection | null;
+  readonly #getSelections: () => Selection[];
+  readonly #getAdditionalRules: ConditionalRuleListExtension;
+
+  #root: HTMLElement | null = null;
 
   constructor(
-    private readonly commands: SheetCommandBus,
-    private readonly queries: SheetQueryRegistry,
-    private readonly getSelection: () => Selection | null,
-    private readonly getSelections: () => Selection[] = () => [this.getSelection()].filter((range): range is Selection => !!range),
-    private readonly getAdditionalRules: ConditionalRuleListExtension = () => [],
-  ) {}
+    commands: SheetCommandBus,
+    queries: SheetQueryRegistry,
+    getSelection: () => Selection | null,
+    getSelections: () => Selection[] = () => [this.#getSelection()].filter((range): range is Selection => !!range),
+    getAdditionalRules: ConditionalRuleListExtension = () => [],
+  ) {
+    this.#commands = commands;
+    this.#queries = queries;
+    this.#getSelection = getSelection;
+    this.#getSelections = getSelections;
+    this.#getAdditionalRules = getAdditionalRules;
+  }
 
-  public destroy(): void { this.root?.remove(); this.root = null; }
+  public destroy(): void { this.#root?.remove(); this.#root = null; }
 
   public openCreate(
     initialCondition: CellHighlightCondition = { kind: CellHighlightKind.Value },
@@ -59,11 +71,11 @@ export class WebCellHighlightDialog {
     const selections = editing ? [{
       anchor: [editing.row, editing.column] as [number, number],
       focus: [editing.rule.endRow, editing.rule.endColumn] as [number, number],
-    }] : this.getSelections();
+    }] : this.#getSelections();
     if (!selections.length) return;
     this.destroy();
-    const { root, panel } = this.createShell(editing ? 'Edit rule' : 'New rule', onCancel);
-    const kind = this.createSelect(kindLabels, initialCondition.kind, 'highlight-kind');
+    const { root, panel } = this.#createShell(editing ? 'Edit rule' : 'New rule', onCancel);
+    const kind = this.#createSelect(kindLabels, initialCondition.kind, 'highlight-kind');
     kind.setAttribute('aria-label', 'Rule type');
     const range = editing ? document.createElement('input') : null;
     const rangeLabel = range ? document.createElement('label') : null;
@@ -76,7 +88,7 @@ export class WebCellHighlightDialog {
     }
     const details = document.createElement('div');
     details.className = 'sear-cell-highlight-details';
-    const style = this.createStylePicker(editing?.rule.style);
+    const style = this.#createStylePicker(editing?.rule.style);
     panel.append(kind, ...(rangeLabel ? [rangeLabel] : []), details, style.element);
     const renderDetails = () => {
       details.replaceChildren();
@@ -107,10 +119,10 @@ export class WebCellHighlightDialog {
       }
       if (selected !== CellHighlightKind.Value && selected !== CellHighlightKind.Text) return;
       const operator = selected === CellHighlightKind.Value
-        ? this.createSelect(valueLabels, selected === initialCondition.kind
+        ? this.#createSelect(valueLabels, selected === initialCondition.kind
           ? initialCondition.operator as CellHighlightValueOperator ?? CellHighlightValueOperator.Between
           : CellHighlightValueOperator.Between, 'highlight-operator')
-        : this.createSelect(textLabels, selected === initialCondition.kind
+        : this.#createSelect(textLabels, selected === initialCondition.kind
           ? initialCondition.operator as CellHighlightTextOperator ?? CellHighlightTextOperator.Contains
           : CellHighlightTextOperator.Contains, 'highlight-operator');
       operator.setAttribute('aria-label', 'Condition');
@@ -135,7 +147,7 @@ export class WebCellHighlightDialog {
     };
     kind.addEventListener('change', renderDetails);
     renderDetails();
-    this.addActions(panel, () => {
+    this.#addActions(panel, () => {
       const selected = kind.value as CellHighlightKind;
       const operator = details.querySelector<HTMLSelectElement>('select');
       const first = details.querySelector<HTMLInputElement>('[data-testid="highlight-value"]');
@@ -172,11 +184,11 @@ export class WebCellHighlightDialog {
         if (!parsed) {
           range?.setCustomValidity('Enter a valid range.'); range?.reportValidity(); return;
         }
-        const shape = this.queries.run(ReadSheetCellDataQuery, void 0).shape;
+        const shape = this.#queries.run(ReadSheetCellDataQuery, void 0).shape;
         if (parsed.focus[0] >= shape[0] || parsed.focus[1] >= shape[1]) {
           range?.setCustomValidity('Range exceeds the sheet bounds.'); range?.reportValidity(); return;
         }
-        this.commands.run(UpdateCellHighlightRuleCommand, {
+        this.#commands.run(UpdateCellHighlightRuleCommand, {
           id: editing.rule.id, ...parsed, condition, style: style.getValue(),
         });
         this.destroy();
@@ -184,7 +196,7 @@ export class WebCellHighlightDialog {
         return;
       }
       for (const selection of selections)
-        this.commands.run(AddCellHighlightRuleCommand, { ...selection, condition, style: style.getValue() });
+        this.#commands.run(AddCellHighlightRuleCommand, { ...selection, condition, style: style.getValue() });
       this.destroy();
     }, onCancel);
     document.body.appendChild(root);
@@ -193,28 +205,28 @@ export class WebCellHighlightDialog {
 
   public openManage(initialScope: 'selection' | 'sheet' = 'selection', initialScrollTop = 0): void {
     this.destroy();
-    const { root, panel } = this.createShell('View existing rules');
-    const scope = this.createSelect<'selection' | 'sheet'>({ selection: 'Selection', sheet: 'Current sheet' }, initialScope, 'highlight-scope');
+    const { root, panel } = this.#createShell('View existing rules');
+    const scope = this.#createSelect<'selection' | 'sheet'>({ selection: 'Selection', sheet: 'Current sheet' }, initialScope, 'highlight-scope');
     scope.setAttribute('aria-label', 'View scope');
     const list = document.createElement('div');
     list.className = 'sear-cell-highlight-list';
     const render = () => {
       list.replaceChildren();
-      const selection = this.getSelection();
+      const selection = this.#getSelection();
       const bounds = selection ? {
         top: Math.min(selection.anchor[0], selection.focus[0]),
         left: Math.min(selection.anchor[1], selection.focus[1]),
         bottom: Math.max(selection.anchor[0], selection.focus[0]),
         right: Math.max(selection.anchor[1], selection.focus[1]),
       } : null;
-      const rules = this.queries.run(ReadCellHighlightRulesQuery, void 0).filter(({ row, column, rule }) =>
+      const rules = this.#queries.run(ReadCellHighlightRulesQuery, void 0).filter(({ row, column, rule }) =>
         scope.value === 'sheet' || (bounds && row <= bounds.bottom && column <= bounds.right &&
           rule.endRow >= bounds.top && rule.endColumn >= bounds.left));
-      const additionalRows = this.getAdditionalRules(scope.value as 'selection' | 'sheet', bounds, render);
+      const additionalRows = this.#getAdditionalRules(scope.value as 'selection' | 'sheet', bounds, render);
       if (!rules.length && !additionalRows.length) {
         const empty = document.createElement('p'); empty.textContent = 'No rules'; list.appendChild(empty); return;
       }
-      const rows = [...rules.map((entry) => ({ priority: entry.rule.priority, node: this.createRuleRow(entry, render, () => {
+      const rows = [...rules.map((entry) => ({ priority: entry.rule.priority, node: this.#createRuleRow(entry, render, () => {
         const savedScope = scope.value as 'selection' | 'sheet';
         const savedScrollTop = list.scrollTop;
         this.openCreate(entry.rule.condition, () => this.openManage(savedScope, savedScrollTop), entry);
@@ -239,7 +251,7 @@ export class WebCellHighlightDialog {
     list.scrollTop = initialScrollTop;
   }
 
-  private createRuleRow(entry: PositionedCellHighlightRule, render: () => void, editRule: () => void): HTMLElement {
+  #createRuleRow(entry: PositionedCellHighlightRule, render: () => void, editRule: () => void): HTMLElement {
     const row = document.createElement('div'); row.className = 'sear-cell-highlight-rule';
     const label = document.createElement('span');
     const condition = entry.rule.condition;
@@ -263,12 +275,12 @@ export class WebCellHighlightDialog {
     const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×';
     const removeLabel = `Remove ${kindLabels[condition.kind]} rule${comparison ? ` (${comparison})` : ''} ${formatRange(entry)}`;
     remove.title = removeLabel; remove.setAttribute('aria-label', removeLabel);
-    remove.addEventListener('click', () => { this.commands.run(RemoveCellHighlightRuleCommand, { id: entry.rule.id }); render(); });
+    remove.addEventListener('click', () => { this.#commands.run(RemoveCellHighlightRuleCommand, { id: entry.rule.id }); render(); });
     row.append(label, swatch, edit, remove);
     return row;
   }
 
-  private createShell(title: string, onDismiss: () => void = () => this.destroy()): { root: HTMLElement; panel: HTMLElement } {
+  #createShell(title: string, onDismiss: () => void = () => this.destroy()): { root: HTMLElement; panel: HTMLElement } {
     const root = document.createElement('div'); root.className = 'sear-cell-highlight-overlay';
     const panel = document.createElement('div'); panel.className = 'sear-cell-highlight-panel';
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', title);
@@ -278,11 +290,11 @@ export class WebCellHighlightDialog {
     close.addEventListener('click', onDismiss);
     root.addEventListener('click', (event) => { if (event.target === root) onDismiss(); });
     root.addEventListener('keydown', (event) => { if (event.key === 'Escape') onDismiss(); });
-    panel.append(heading, close); root.appendChild(panel); this.root = root;
+    panel.append(heading, close); root.appendChild(panel); this.#root = root;
     return { root, panel };
   }
 
-  private createSelect<T extends string>(labels: Readonly<Record<T, string>>, selected: T, testId: string): HTMLSelectElement {
+  #createSelect<T extends string>(labels: Readonly<Record<T, string>>, selected: T, testId: string): HTMLSelectElement {
     const select = document.createElement('select'); select.dataset['testid'] = testId;
     for (const [value, label] of Object.entries(labels)) {
       const option = document.createElement('option'); option.value = value; option.textContent = label as string;
@@ -292,7 +304,7 @@ export class WebCellHighlightDialog {
     return select;
   }
 
-  private createStylePicker(selected: CellHighlightStyle = CellHighlightStyle.RedFill): {
+  #createStylePicker(selected: CellHighlightStyle = CellHighlightStyle.RedFill): {
     element: HTMLElement; getValue: () => CellHighlightStyle;
   } {
     const fieldset = document.createElement('fieldset'); fieldset.className = 'sear-cell-highlight-styles';
@@ -311,7 +323,7 @@ export class WebCellHighlightDialog {
     };
   }
 
-  private addActions(panel: HTMLElement, confirm: () => void, onCancel: () => void = () => this.destroy()): void {
+  #addActions(panel: HTMLElement, confirm: () => void, onCancel: () => void = () => this.destroy()): void {
     const actions = document.createElement('div'); actions.className = 'sear-cell-highlight-actions';
     const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel';
     cancel.addEventListener('click', onCancel);

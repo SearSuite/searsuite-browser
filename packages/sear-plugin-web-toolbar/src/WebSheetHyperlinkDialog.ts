@@ -8,7 +8,7 @@ export interface SheetHyperlinkDraft {
 
 /** Browser entry for creating a formula-backed hyperlink in the selected cell. */
 export class WebSheetHyperlinkDialog {
-  private dialog: HTMLDialogElement | null = null;
+  #dialog: HTMLDialogElement | null = null;
 
   public open(label: string, onApply: (draft: SheetHyperlinkDraft) => string | null, onClose: () => void): void {
     this.destroy();
@@ -37,7 +37,7 @@ export class WebSheetHyperlinkDialog {
         <footer><button type="button" data-action="cancel">Cancel</button><button type="submit">OK</button></footer>
       </form>`;
     document.body.appendChild(dialog);
-    this.dialog = dialog;
+    this.#dialog = dialog;
     dialog.querySelector<HTMLInputElement>('input[name="label"]')!.value = label;
     let kind: SheetHyperlinkKind = 'web';
     dialog.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach((button) => button.addEventListener('click', () => {
@@ -67,7 +67,7 @@ export class WebSheetHyperlinkDialog {
   }
 
   public destroy(): void {
-    this.dialog?.remove();
-    this.dialog = null;
+    this.#dialog?.remove();
+    this.#dialog = null;
   }
 }

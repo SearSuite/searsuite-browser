@@ -35,7 +35,20 @@ describe('WebDataValidationFeedback', () => {
   it('BUG-465 shows the saved prompt on selection and gives invalid data priority', () => {
     const root = document.createElement('div');
     document.body.append(root);
-    const core = { renderEngine: { renderContext: { getRoot: () => root } } } as unknown as SearCoreSheet;
+    const sizes = {
+      shape: [1, 50],
+      getDimensionLeftBoundaryByIndex: (index: number) => index * 4,
+      getDimensionRightBoundaryByIndex: (index: number) => (index + 1) * 4,
+    };
+    const core = {
+      getDataEngine: () => ({ readDataViewField: (_: string, key: string) =>
+        key === SheetRowSizesFieldKey || key === SheetColumnSizesFieldKey ? sizes : null }),
+      configEngine: { getDefaultConfig: () => ({}) },
+      renderEngine: {
+        renderContext: { getRoot: () => root },
+        scrollManager: { getState: () => ({ x: 0, y: 0 }), getShape: () => [400, 300] },
+      },
+    } as unknown as SearCoreSheet;
     const queries = new SheetQueryRegistry();
     let selected: [number, number] = [19, 10];
     let issue: DataValidationIssue | null = null;
@@ -52,8 +65,6 @@ describe('WebDataValidationFeedback', () => {
     const feedback = new WebDataValidationFeedback(
       core, queries, () => ({ anchor: selected, focus: selected }), new BrowserPlatform(),
     );
-    jest.spyOn(feedback as unknown as { position: () => { left: number; right: number; top: number } }, 'position')
-      .mockReturnValue({ left: 100, right: 120, top: 100 });
 
     feedback.refresh();
     expect(document.querySelector('[role="status"]')?.textContent).toContain('Input messageEnter an ID number');

@@ -14,9 +14,12 @@ import { WebTextShaperError } from './WebTextShaperError';
  * Call `clearCache()` after an asynchronously loaded font becomes available.
  */
 export class WebTextShaper extends TextShaper {
+  readonly #context: WebTextShaperContext;
+
   /** Creates a Web text shaper over a host-owned Canvas2D context. */
-  public constructor(private readonly context: WebTextShaperContext) {
+  public constructor(context: WebTextShaperContext) {
     super();
+    this.#context = context;
     if (
       !context ||
       typeof context.measureText !== 'function' ||
@@ -31,12 +34,12 @@ export class WebTextShaper extends TextShaper {
 
   /** Shapes one text run without retaining mutations on the host context. */
   protected override shapeText(input: NormalizedTextShapeInput): TextShapeResult {
-    this.context.save();
+    this.#context.save();
     try {
-      configureWebTextShaperContext(this.context, input);
-      return createWebTextShapeResult(this.context, input.text);
+      configureWebTextShaperContext(this.#context, input);
+      return createWebTextShapeResult(this.#context, input.text);
     } finally {
-      this.context.restore();
+      this.#context.restore();
     }
   }
 }

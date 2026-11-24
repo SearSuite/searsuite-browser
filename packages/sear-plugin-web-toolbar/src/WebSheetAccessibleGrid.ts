@@ -7,16 +7,20 @@ const GRID_PROXY_ATTRIBUTE = 'data-sear-grid-proxy';
 
 /** Screen-reader grid for the current neighborhood of a Web sheet surface. */
 export class WebSheetAccessibleGrid {
-  private grid: HTMLDivElement | null = null;
-  private surface: Element | null = null;
-  private previousProxyId: string | null = null;
+  readonly #id: string;
 
-  public constructor(private readonly id: string) {}
+  #grid: HTMLDivElement | null = null;
+  #surface: Element | null = null;
+  #previousProxyId: string | null = null;
+
+  public constructor(id: string) {
+    this.#id = id;
+  }
 
   public mount(surface: Element): void {
     this.destroy();
     const grid = surface.ownerDocument.createElement('div');
-    grid.id = this.id;
+    grid.id = this.#id;
     grid.setAttribute('role', 'grid');
     grid.setAttribute('aria-label', 'Sheet grid');
     grid.setAttribute('aria-multiselectable', 'true');
@@ -24,10 +28,10 @@ export class WebSheetAccessibleGrid {
     grid.style.cssText =
       'position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap';
     surface.ownerDocument.body.appendChild(grid);
-    this.previousProxyId = surface.getAttribute(GRID_PROXY_ATTRIBUTE);
-    surface.setAttribute(GRID_PROXY_ATTRIBUTE, this.id);
-    this.surface = surface;
-    this.grid = grid;
+    this.#previousProxyId = surface.getAttribute(GRID_PROXY_ATTRIBUTE);
+    surface.setAttribute(GRID_PROXY_ATTRIBUTE, this.#id);
+    this.#surface = surface;
+    this.#grid = grid;
   }
 
   public render(
@@ -35,7 +39,7 @@ export class WebSheetAccessibleGrid {
     cells: SheetCellDataReader | null,
     richResults?: IFormulaRichResultProvider,
   ): void {
-    const grid = this.grid;
+    const grid = this.#grid;
     if (!grid) return;
     const [rowCount = 0, columnCount = 0] = cells?.shape ?? [];
     grid.setAttribute('aria-rowcount', String(rowCount));
@@ -60,7 +64,7 @@ export class WebSheetAccessibleGrid {
         const active = row === activeRow && column === activeColumn;
         const stored = cells.getItem(row, column);
         const value = active ? state.text : String(stored?.formula ?? stored?.value ?? '');
-        cell.id = `${this.id}-cell-${row}-${column}`;
+        cell.id = `${this.#id}-cell-${row}-${column}`;
         cell.setAttribute('role', 'gridcell');
         cell.setAttribute('aria-colindex', String(column + 1));
         cell.setAttribute('aria-selected', String(isSelected(state, row, column)));
@@ -79,22 +83,22 @@ export class WebSheetAccessibleGrid {
       }
       grid.appendChild(rowElement);
     }
-    grid.setAttribute('aria-activedescendant', `${this.id}-cell-${activeRow}-${activeColumn}`);
+    grid.setAttribute('aria-activedescendant', `${this.#id}-cell-${activeRow}-${activeColumn}`);
   }
 
   public focus(): void {
-    this.grid?.focus({ preventScroll: true });
+    this.#grid?.focus({ preventScroll: true });
   }
 
   public destroy(): void {
-    if (this.surface) {
-      if (this.previousProxyId === null) this.surface.removeAttribute(GRID_PROXY_ATTRIBUTE);
-      else this.surface.setAttribute(GRID_PROXY_ATTRIBUTE, this.previousProxyId);
+    if (this.#surface) {
+      if (this.#previousProxyId === null) this.#surface.removeAttribute(GRID_PROXY_ATTRIBUTE);
+      else this.#surface.setAttribute(GRID_PROXY_ATTRIBUTE, this.#previousProxyId);
     }
-    this.grid?.remove();
-    this.grid = null;
-    this.surface = null;
-    this.previousProxyId = null;
+    this.#grid?.remove();
+    this.#grid = null;
+    this.#surface = null;
+    this.#previousProxyId = null;
   }
 }
 

@@ -21,33 +21,44 @@ import {
 } from '@searsuite/sear-plugin-checkbox';
 /** Disposed host panel and scoped Space binding for one Sheet toolbar. */
 export class WebCheckboxController {
-  private panel: HTMLElement | null = null;
-  private disposed = false;
-  private ownsFocus = false;
-  private disposePanelCommands: (() => void) | null = null;
-  private readonly controls: WebControlEventScope;
-  private readonly disposers: (() => void)[] = [];
+  readonly #surface: unknown;
+  readonly #platform: Platform;
+  readonly #commands: SheetCommandBus;
+  readonly #queries: SheetQueryRegistry;
+  readonly #openValidation: (() => void) | undefined;
+
+  #panel: HTMLElement | null = null;
+  #disposed = false;
+  #ownsFocus = false;
+  #disposePanelCommands: (() => void) | null = null;
+  readonly #controls: WebControlEventScope;
+  readonly #disposers: (() => void)[] = [];
   /** Binds host actions; every mutation is dispatched through the owning command bus. */ public constructor(
     button: HTMLButtonElement,
-    private readonly surface: unknown,
-    private readonly platform: Platform,
-    private readonly commands: SheetCommandBus,
-    private readonly queries: SheetQueryRegistry,
-    private readonly openValidation?: () => void,
+    surface: unknown,
+    platform: Platform,
+    commands: SheetCommandBus,
+    queries: SheetQueryRegistry,
+    openValidation?: () => void,
   ) {
-    this.controls = new WebControlEventScope(platform);
+    this.#surface = surface;
+    this.#platform = platform;
+    this.#commands = commands;
+    this.#queries = queries;
+    this.#openValidation = openValidation;
+    this.#controls = new WebControlEventScope(platform);
     button.disabled = false;
     button.classList.remove('disabled');
     button.title = 'Checkbox (press Space to toggle selected cells)';
     button.setAttribute('aria-label', 'Checkbox');
-    this.disposers.push(
+    this.#disposers.push(
       platform.addEventListener(button, 'click', () => this.open()),
       platform.addEventListener(
         document,
         'mousedown',
         (event) => {
           const target = (event as MouseEvent).target;
-          this.ownsFocus = target instanceof Node && surface instanceof Node && surface.contains(target);
+          this.#ownsFocus = target instanceof Node && surface instanceof Node && surface.contains(target);
         },
         { capture: true },
       ),
@@ -57,13 +68,13 @@ export class WebCheckboxController {
         (event) => {
           const key = event as KeyboardEvent;
           if (key.defaultPrevented) return;
-          if (key.key === 'Escape' && this.panel) {
+          if (key.key === 'Escape' && this.#panel) {
             key.preventDefault();
-            this.close(true);
+            this.#close(true);
             return;
           }
           if (
-            !this.ownsFocus ||
+            !this.#ownsFocus ||
             key.repeat ||
             key.key !== ' ' ||
             key.ctrlKey ||
@@ -79,30 +90,30 @@ export class WebCheckboxController {
             target.id !== 'searTextInput'
           )
             return;
-          if (this.queries.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, undefined)) return;
-          if (this.selectionCount() > 1) return;
-          const range = this.selection();
-          if (!range || !this.queries.run(ReadCheckboxRangeQuery, range).count) return;
+          if (this.#queries.has(IsCellEditingQuery) && this.#queries.run(IsCellEditingQuery, undefined)) return;
+          if (this.#selectionCount() > 1) return;
+          const range = this.#selection();
+          if (!range || !this.#queries.run(ReadCheckboxRangeQuery, range).count) return;
           key.preventDefault();
           key.stopPropagation();
-          this.commands.run(ToggleCheckboxesCommand, range);
+          this.#commands.run(ToggleCheckboxesCommand, range);
         },
         { capture: true },
       ),
     );
   }
   /** Opens checkbox insertion and bulk actions for the current selection. */ public open(): void {
-    if (this.disposed) return;
-    if (this.queries.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, undefined)) {
-      if (!this.commands.has(CommitCellEditCommand)) return;
-      this.commands.run(CommitCellEditCommand, undefined);
-      if (this.queries.run(IsCellEditingQuery, undefined)) return;
+    if (this.#disposed) return;
+    if (this.#queries.has(IsCellEditingQuery) && this.#queries.run(IsCellEditingQuery, undefined)) {
+      if (!this.#commands.has(CommitCellEditCommand)) return;
+      this.#commands.run(CommitCellEditCommand, undefined);
+      if (this.#queries.run(IsCellEditingQuery, undefined)) return;
     }
-    const range = this.selection();
+    const range = this.#selection();
     if (!range) return;
-    this.close();
+    this.#close();
     const root = document.createElement('section');
-    this.panel = root;
+    this.#panel = root;
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', 'Checkbox settings');
     root.style.cssText =
@@ -112,8 +123,8 @@ export class WebCheckboxController {
     title.style.fontSize = '16px';
     root.append(title);
     let currentRange = range;
-    let selectionCount = this.selectionCount();
-    const state = this.queries.run(ReadCheckboxRangeQuery, range),
+    let selectionCount = this.#selectionCount();
+    const state = this.#queries.run(ReadCheckboxRangeQuery, range),
       summary = document.createElement('p');
     const describe = (count: number, checked: number, mixed: boolean): string =>
       selectionCount > 1
@@ -133,7 +144,7 @@ export class WebCheckboxController {
     const error = document.createElement('p');
     error.setAttribute('role', 'alert');
     error.style.color = '#b42318';
-    this.controls.listen(replace, 'change', () => {
+    this.#controls.listen(replace, 'change', () => {
       error.textContent = '';
     });
     const actionButtons: { button: HTMLButtonElement; requiresCheckboxes: boolean }[] = [];
@@ -151,10 +162,10 @@ export class WebCheckboxController {
       button.style.cssText =
         'padding:7px 10px;margin:6px 4px 0 0;border:1px solid #d5dce7;border-radius:5px;background:#f6f8fc;cursor:pointer';
       if (blockOnDisjoint) actionButtons.push({ button, requiresCheckboxes });
-      this.controls.listen(button, 'click', () => {
+      this.#controls.listen(button, 'click', () => {
         try {
           run();
-          this.close(true);
+          this.#close(true);
         } catch (cause) {
           error.textContent =
             cause instanceof CheckboxError &&
@@ -169,64 +180,64 @@ export class WebCheckboxController {
       root.append(button);
     };
     action('Insert checkboxes', () =>
-      this.commands.run(InsertCheckboxesCommand, { ...currentRange, replaceExisting: replace.checked }),
+      this.#commands.run(InsertCheckboxesCommand, { ...currentRange, replaceExisting: replace.checked }),
     );
-    action('Check all', () => this.commands.run(SetCheckboxesCommand, { ...currentRange, checked: true }), true);
-    action('Uncheck all', () => this.commands.run(SetCheckboxesCommand, { ...currentRange, checked: false }), true);
+    action('Check all', () => this.#commands.run(SetCheckboxesCommand, { ...currentRange, checked: true }), true);
+    action('Uncheck all', () => this.#commands.run(SetCheckboxesCommand, { ...currentRange, checked: false }), true);
     action(
       'Convert to TRUE/FALSE text',
-      () => this.commands.run(RemoveCheckboxesCommand, { ...currentRange, mode: CheckboxRemovalMode.Text }),
+      () => this.#commands.run(RemoveCheckboxesCommand, { ...currentRange, mode: CheckboxRemovalMode.Text }),
       true,
     );
     action(
       'Clear checkboxes',
-      () => this.commands.run(RemoveCheckboxesCommand, { ...currentRange, mode: CheckboxRemovalMode.Clear }),
+      () => this.#commands.run(RemoveCheckboxesCommand, { ...currentRange, mode: CheckboxRemovalMode.Clear }),
       true,
     );
-    if (this.openValidation)
+    if (this.#openValidation)
       action('Input messages and warnings', () => {
-        this.close();
-        this.openValidation?.();
+        this.#close();
+        this.#openValidation?.();
       });
-    action('Close checkbox settings', () => this.close(true), false, false);
+    action('Close checkbox settings', () => this.#close(true), false, false);
     root.append(error);
     document.body.append(root);
     setActionAvailability(state.count);
-    this.disposePanelCommands = this.commands.subscribe((event) => {
-      if (event.phase !== CommandExecutionPhase.Completed || this.panel !== root) return;
-      const nextRange = this.selection();
+    this.#disposePanelCommands = this.#commands.subscribe((event) => {
+      if (event.phase !== CommandExecutionPhase.Completed || this.#panel !== root) return;
+      const nextRange = this.#selection();
       if (!nextRange) {
-        this.close();
+        this.#close();
         return;
       }
       currentRange = nextRange;
-      selectionCount = this.selectionCount();
-      const nextState = this.queries.run(ReadCheckboxRangeQuery, currentRange);
+      selectionCount = this.#selectionCount();
+      const nextState = this.#queries.run(ReadCheckboxRangeQuery, currentRange);
       summary.textContent = describe(nextState.count, nextState.checked, nextState.mixed);
       setActionAvailability(nextState.count);
     });
     replace.focus({ preventScroll: true });
   }
-  private selection(): SheetRangeInput | null {
-    const range = this.queries.run(GetSelection, undefined);
+  #selection(): SheetRangeInput | null {
+    const range = this.#queries.run(GetSelection, undefined);
     return range ? { anchor: [...range.start], focus: [...range.end] } : null;
   }
-  private selectionCount(): number {
-    return this.queries.has(GetSelections) ? this.queries.run(GetSelections, undefined).length : 1;
+  #selectionCount(): number {
+    return this.#queries.has(GetSelections) ? this.#queries.run(GetSelections, undefined).length : 1;
   }
-  private close(restoreFocus = false): void {
-    const wasOpen = this.panel !== null;
-    this.disposePanelCommands?.();
-    this.disposePanelCommands = null;
-    this.controls.clear();
-    this.panel?.remove();
-    this.panel = null;
-    if (wasOpen && restoreFocus && !this.disposed) this.ownsFocus = focusWebSheetSurface(this.surface);
+  #close(restoreFocus = false): void {
+    const wasOpen = this.#panel !== null;
+    this.#disposePanelCommands?.();
+    this.#disposePanelCommands = null;
+    this.#controls.clear();
+    this.#panel?.remove();
+    this.#panel = null;
+    if (wasOpen && restoreFocus && !this.#disposed) this.#ownsFocus = focusWebSheetSurface(this.#surface);
   }
   /** Releases all host callbacks before the editor-local runtime is destroyed. */ public destroy(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-    this.disposers.reverse().forEach((dispose) => dispose());
-    this.close();
+    if (this.#disposed) return;
+    this.#disposed = true;
+    this.#disposers.reverse().forEach((dispose) => dispose());
+    this.#close();
   }
 }

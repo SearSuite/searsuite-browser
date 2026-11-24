@@ -7,16 +7,20 @@ export interface SheetContextAction {
 
 /** Browser menu for commands at a Sheet grid or header pointer location. */
 export class WebSheetContextMenu {
-  private root: HTMLElement | null = null;
-  private disposeOutside: (() => void) | null = null;
-  private disposeKeydown: (() => void) | null = null;
-  private previousFocus: HTMLElement | null = null;
+  readonly #platform: Platform;
 
-  public constructor(private readonly platform: Platform) {}
+  #root: HTMLElement | null = null;
+  #disposeOutside: (() => void) | null = null;
+  #disposeKeydown: (() => void) | null = null;
+  #previousFocus: HTMLElement | null = null;
+
+  public constructor(platform: Platform) {
+    this.#platform = platform;
+  }
 
   public open(x: number, y: number, actions: readonly SheetContextAction[]): void {
     this.close();
-    this.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.#previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const menu = document.createElement('div');
     menu.className = 'sear-sheet-context-menu';
     menu.setAttribute('role', 'menu');
@@ -31,13 +35,13 @@ export class WebSheetContextMenu {
     document.body.appendChild(menu);
     menu.style.left = `${Math.max(4, Math.min(x, window.innerWidth - menu.offsetWidth - 4))}px`;
     menu.style.top = `${Math.max(4, Math.min(y, window.innerHeight - menu.offsetHeight - 4))}px`;
-    this.root = menu;
-    this.disposeOutside = this.platform.addEventListener(document, 'pointerdown', (event) => {
+    this.#root = menu;
+    this.#disposeOutside = this.#platform.addEventListener(document, 'pointerdown', (event) => {
       if (!menu.contains((event as Event).target as Node)) this.close();
     });
-    this.disposeKeydown = this.platform.addEventListener(document, 'keydown', (event) => {
+    this.#disposeKeydown = this.#platform.addEventListener(document, 'keydown', (event) => {
       const key = event as KeyboardEvent;
-      if (!this.root) return;
+      if (!this.#root) return;
       if (key.key === 'Escape') {
         key.preventDefault();
         key.stopPropagation();
@@ -56,18 +60,18 @@ export class WebSheetContextMenu {
     first?.focus({ preventScroll: true });
     // The grid may reclaim focus after the contextmenu event finishes dispatching.
     setTimeout(() => {
-      if (this.root === menu) first?.focus({ preventScroll: true });
+      if (this.#root === menu) first?.focus({ preventScroll: true });
     }, 0);
   }
 
   public close(restoreFocus = false): void {
-    this.disposeOutside?.();
-    this.disposeOutside = null;
-    this.disposeKeydown?.();
-    this.disposeKeydown = null;
-    this.root?.remove();
-    this.root = null;
-    if (restoreFocus && this.previousFocus?.isConnected) this.previousFocus.focus({ preventScroll: true });
-    this.previousFocus = null;
+    this.#disposeOutside?.();
+    this.#disposeOutside = null;
+    this.#disposeKeydown?.();
+    this.#disposeKeydown = null;
+    this.#root?.remove();
+    this.#root = null;
+    if (restoreFocus && this.#previousFocus?.isConnected) this.#previousFocus.focus({ preventScroll: true });
+    this.#previousFocus = null;
   }
 }

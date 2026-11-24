@@ -2,7 +2,7 @@ export type SheetDeleteCellsMode = 'left' | 'up' | 'row' | 'column';
 
 /** Browser dialog for choosing how a selected sheet range is removed. */
 export class WebSheetDeleteCellsDialog {
-  private dialog: HTMLDialogElement | null = null;
+  #dialog: HTMLDialogElement | null = null;
 
   public open(onApply: (mode: SheetDeleteCellsMode) => void): void {
     this.destroy();
@@ -22,7 +22,7 @@ export class WebSheetDeleteCellsDialog {
         <footer><button type="button" data-action="cancel">Cancel</button><button type="submit" data-action="apply">OK</button></footer>
       </form>`;
     document.body.appendChild(dialog);
-    this.dialog = dialog;
+    this.#dialog = dialog;
     dialog.querySelector<HTMLButtonElement>('[data-action="cancel"]')!.addEventListener('click', () => dialog.close());
     dialog.addEventListener('close', () => this.destroy());
     dialog.querySelector('form')!.addEventListener('submit', (event) => {
@@ -36,7 +36,7 @@ export class WebSheetDeleteCellsDialog {
   }
 
   public destroy(): void {
-    this.dialog?.remove();
-    this.dialog = null;
+    this.#dialog?.remove();
+    this.#dialog = null;
   }
 }

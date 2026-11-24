@@ -1,3 +1,4 @@
+import { getLargeTranslationNormalization } from '../../src/sear-render-context/WebRenderTransform';
 import { WebCanvasRenderContext } from '../../src/sear-render-context/WebCanvasRenderContext';
 import { BrowserPlatform } from '@searsuite/sear-browser-adapters';
 
@@ -258,15 +259,10 @@ describe('WebCanvasRenderContext', () => {
   });
 
   it('handles invalid large-translation normalization matrices', () => {
-    const contextType = WebCanvasRenderContext as unknown as {
-      getLargeTranslationNormalization(
-        transform: [number, number, number, number, number, number],
-      ): { offsetX: number; offsetY: number; transform: [number, number, number, number, number, number] } | null;
-    };
 
-    expect(contextType.getLargeTranslationNormalization([1, 0, 0, 1, 1, 1])).toBeNull();
-    expect(contextType.getLargeTranslationNormalization([1, 0, 1, 0, 20_000_000, 0])).toBeNull();
-    expect(contextType.getLargeTranslationNormalization([1e-308, 0, 0, 1, Number.MAX_VALUE, 0])).toBeNull();
+    expect(getLargeTranslationNormalization([1, 0, 0, 1, 1, 1])).toBeNull();
+    expect(getLargeTranslationNormalization([1, 0, 1, 0, 20_000_000, 0])).toBeNull();
+    expect(getLargeTranslationNormalization([1e-308, 0, 0, 1, Number.MAX_VALUE, 0])).toBeNull();
   });
 
   it('uses fallback dimensions when clientWidth/clientHeight are zero and tests resize default arg', () => {

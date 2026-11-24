@@ -11,11 +11,15 @@ interface SheetFreezeSelection {
 
 /** Web-only menu for the two independent freeze and fixed-row capabilities. */
 export class WebSheetFreezeMenu {
-  private root: HTMLElement | null = null;
-  private disposeOutside: (() => void) | null = null;
-  private disposeKeydown: (() => void) | null = null;
+  readonly #platform: Platform;
 
-  public constructor(private readonly platform: Platform) {}
+  #root: HTMLElement | null = null;
+  #disposeOutside: (() => void) | null = null;
+  #disposeKeydown: (() => void) | null = null;
+
+  public constructor(platform: Platform) {
+    this.#platform = platform;
+  }
 
   public open(
     anchor: HTMLElement,
@@ -79,13 +83,13 @@ export class WebSheetFreezeMenu {
     const rect = anchor.getBoundingClientRect();
     menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8))}px`;
     menu.style.top = `${Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - menu.offsetHeight - 8))}px`;
-    this.root = menu;
-    this.disposeOutside = this.platform.addEventListener(document, 'pointerdown', (event) => {
+    this.#root = menu;
+    this.#disposeOutside = this.#platform.addEventListener(document, 'pointerdown', (event) => {
       if (!menu.contains((event as PointerEvent).target as Node) && !anchor.contains((event as PointerEvent).target as Node)) {
         this.close();
       }
     });
-    this.disposeKeydown = this.platform.addEventListener(document, 'keydown', (event) => {
+    this.#disposeKeydown = this.#platform.addEventListener(document, 'keydown', (event) => {
       const key = (event as KeyboardEvent).key;
       if (key === 'Escape') {
         this.close();
@@ -104,12 +108,12 @@ export class WebSheetFreezeMenu {
   }
 
   public close(): void {
-    this.disposeOutside?.();
-    this.disposeOutside = null;
-    this.disposeKeydown?.();
-    this.disposeKeydown = null;
-    this.root?.remove();
-    this.root = null;
+    this.#disposeOutside?.();
+    this.#disposeOutside = null;
+    this.#disposeKeydown?.();
+    this.#disposeKeydown = null;
+    this.#root?.remove();
+    this.#root = null;
   }
 }
 

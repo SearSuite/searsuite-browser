@@ -5,17 +5,23 @@ import {
 
 /** Browser adapter for header-aware, multi-key range sorting. */
 export class WebSheetSortDialog {
-  private root: HTMLElement | null = null;
-  private readonly headerByRange = new Map<string, boolean>();
+  readonly #commands: SheetCommandBus;
+  readonly #restoreFocus: (() => void) | undefined;
 
-  public constructor(private readonly commands: SheetCommandBus, private readonly restoreFocus?: () => void) {}
+  #root: HTMLElement | null = null;
+  readonly #headerByRange = new Map<string, boolean>();
 
-  public destroy(): void { this.root?.remove(); this.root = null; }
+  public constructor(commands: SheetCommandBus, restoreFocus?: () => void) {
+    this.#commands = commands;
+    this.#restoreFocus = restoreFocus;
+  }
 
-  private close(): void {
-    if (!this.root) return;
+  public destroy(): void { this.#root?.remove(); this.#root = null; }
+
+  #close(): void {
+    if (!this.#root) return;
     this.destroy();
-    this.restoreFocus?.();
+    this.#restoreFocus?.();
   }
 
   public open(range: SheetSortRangeInput['range'], selectedColumn: number, headerNames: readonly string[] = []): void {
@@ -34,12 +40,12 @@ export class WebSheetSortDialog {
     const close = document.createElement('button');
     close.type = 'button'; close.className = 'sear-sheet-sort-close';
     close.textContent = '×'; close.title = 'Close'; close.setAttribute('aria-label', 'Close');
-    close.addEventListener('click', () => this.close());
+    close.addEventListener('click', () => this.#close());
     const headerLabel = document.createElement('label');
     headerLabel.className = 'sear-sheet-sort-header';
     const header = document.createElement('input');
     header.type = 'checkbox'; header.dataset['testid'] = 'sort-header';
-    header.checked = this.headerByRange.get(rangeKey) ?? false;
+    header.checked = this.#headerByRange.get(rangeKey) ?? false;
     headerLabel.append(header, 'First row contains headers and is excluded from sorting');
     const criteria = document.createElement('div');
     criteria.className = 'sear-sheet-sort-criteria';
@@ -68,7 +74,7 @@ export class WebSheetSortDialog {
     actions.className = 'sear-sheet-sort-actions';
     const cancel = document.createElement('button');
     cancel.type = 'button'; cancel.textContent = 'Cancel';
-    cancel.addEventListener('click', () => this.close());
+    cancel.addEventListener('click', () => this.#close());
     const confirm = document.createElement('button');
     confirm.type = 'button'; confirm.textContent = 'OK'; confirm.dataset['role'] = 'confirm';
     confirm.addEventListener('click', () => {
@@ -81,9 +87,9 @@ export class WebSheetSortDialog {
         status.textContent = 'Sort levels cannot use the same column'; return;
       }
       try {
-        this.commands.run(SortSheetRangeCommand, { range, keys, firstRowIsHeader: header.checked });
-        this.headerByRange.set(rangeKey, header.checked);
-        this.close();
+        this.#commands.run(SortSheetRangeCommand, { range, keys, firstRowIsHeader: header.checked });
+        this.#headerByRange.set(rangeKey, header.checked);
+        this.#close();
       } catch (error) {
         status.textContent = error instanceof Error ? error.message : 'Sort failed';
       }
@@ -91,11 +97,11 @@ export class WebSheetSortDialog {
     actions.append(cancel, confirm);
     panel.append(title, close, headerLabel, criteria, add, status, actions);
     root.append(panel);
-    root.addEventListener('click', (event) => { if (event.target === root) this.close(); });
+    root.addEventListener('click', (event) => { if (event.target === root) this.#close(); });
     document.body.append(root);
-    this.root = root;
+    this.#root = root;
     root.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') { event.preventDefault(); this.close(); }
+      if (event.key === 'Escape') { event.preventDefault(); this.#close(); }
     });
     header.focus();
   }

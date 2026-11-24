@@ -8,30 +8,30 @@ import { ScrollAxisLock, ScrollAxisLockConfig } from '@searsuite/sear-render-scr
 /** Adapts a Web scroll surface to logical editor viewport coordinates. */
 @Injectable()
 export class WebScroller extends Scroller {
-  private dom: HTMLElement;
+  #dom: HTMLElement;
   /** DI token for resolving WebScroller. */
   public static readonly symbol: symbol = Symbol.for('WebScroller');
-  private readonly rubberBand: RubberBandMotion;
-  private readonly wheelAxisLock = new ScrollAxisLock();
-  private readonly touchAxisLock = new ScrollAxisLock();
-  private readonly platform: Platform;
-  private wheelEndTimer: number | null = null;
-  private baseTranslate: string | null = null;
-  private baseWillChange: string | null = null;
-  private baseClipPath: string | null = null;
-  private touchPosition: { x: number; y: number } | null = null;
+  readonly #rubberBand: RubberBandMotion;
+  readonly #wheelAxisLock = new ScrollAxisLock();
+  readonly #touchAxisLock = new ScrollAxisLock();
+  readonly #platform: Platform;
+  #wheelEndTimer: number | null = null;
+  #baseTranslate: string | null = null;
+  #baseWillChange: string | null = null;
+  #baseClipPath: string | null = null;
+  #touchPosition: { x: number; y: number } | null = null;
 
   /** Creates a WebScroller instance. */
   constructor(@Inject(Scroller.ContainerSymbol) target: unknown, @Inject(Platform.symbol) platform: Platform) {
     super();
-    this.dom = target as HTMLElement;
-    this.platform = platform;
-    this.rubberBand = new RubberBandController(platform, this.applyRubberBandOffset.bind(this));
+    this.#dom = target as HTMLElement;
+    this.#platform = platform;
+    this.#rubberBand = new RubberBandController(platform, this.#applyRubberBandOffset.bind(this));
   }
 
   /** The host element that owns the scroll surface. */
   public get root(): HTMLElement {
-    return this.dom;
+    return this.#dom;
   }
 
   /**
@@ -39,14 +39,14 @@ export class WebScroller extends Scroller {
    * Logical editor coordinates remain clamped; only the visible surface moves.
    */
   public configureRubberBand(config: Partial<RubberBandConfig>): void {
-    this.rubberBand.configure(config);
+    this.#rubberBand.configure(config);
   }
 
   /** Enables or tunes Safari-style dominant-axis locking for wheel and touch gestures. */
   public configureAxisLock(config: Partial<ScrollAxisLockConfig>): void {
-    this.clearWheelGestureEnd();
-    this.wheelAxisLock.configure(config);
-    this.touchAxisLock.configure(config);
+    this.#clearWheelGestureEnd();
+    this.#wheelAxisLock.configure(config);
+    this.#touchAxisLock.configure(config);
   }
 
   /** Returns the publisher. */
@@ -59,64 +59,64 @@ export class WebScroller extends Scroller {
       function handleDomScrollerWheel(event: WheelEvent): void {
         event.preventDefault?.();
 
-        const delta = scroller.wheelAxisLock.consume(-event.deltaX, -event.deltaY);
+        const delta = scroller.#wheelAxisLock.consume(-event.deltaX, -event.deltaY);
         if (delta.x !== 0 || delta.y !== 0) {
-          scroller.updateFromInput(scrollStateInstance, updateState, delta.x, delta.y, 'wheel');
-          scroller.rubberBand.release(0);
+          scroller.#updateFromInput(scrollStateInstance, updateState, delta.x, delta.y, 'wheel');
+          scroller.#rubberBand.release(0);
         }
-        scroller.queueWheelGestureEnd();
+        scroller.#queueWheelGestureEnd();
       }
       function handleDomScrollerTouchStart(event: TouchEvent): void {
         const touch = event.touches[0];
         if (!touch) return;
-        scroller.clearWheelGestureEnd();
-        scroller.wheelAxisLock.reset();
-        scroller.rubberBand.release(0);
-        scroller.touchAxisLock.reset();
-        scroller.touchPosition = { x: touch.clientX, y: touch.clientY };
+        scroller.#clearWheelGestureEnd();
+        scroller.#wheelAxisLock.reset();
+        scroller.#rubberBand.release(0);
+        scroller.#touchAxisLock.reset();
+        scroller.#touchPosition = { x: touch.clientX, y: touch.clientY };
       }
       function handleDomScrollerTouchMove(event: TouchEvent): void {
         const touch = event.touches[0];
-        if (!touch || !scroller.touchPosition) return;
+        if (!touch || !scroller.#touchPosition) return;
         event.preventDefault();
-        const delta = scroller.touchAxisLock.consume(
-          touch.clientX - scroller.touchPosition.x,
-          touch.clientY - scroller.touchPosition.y,
+        const delta = scroller.#touchAxisLock.consume(
+          touch.clientX - scroller.#touchPosition.x,
+          touch.clientY - scroller.#touchPosition.y,
         );
-        scroller.touchPosition = { x: touch.clientX, y: touch.clientY };
+        scroller.#touchPosition = { x: touch.clientX, y: touch.clientY };
         if (delta.x !== 0 || delta.y !== 0) {
-          scroller.updateFromInput(scrollStateInstance, updateState, delta.x, delta.y, 'touch');
+          scroller.#updateFromInput(scrollStateInstance, updateState, delta.x, delta.y, 'touch');
         }
       }
       function handleDomScrollerTouchEnd(): void {
-        scroller.touchPosition = null;
-        scroller.touchAxisLock.reset();
-        scroller.rubberBand.release(0, true);
+        scroller.#touchPosition = null;
+        scroller.#touchAxisLock.reset();
+        scroller.#rubberBand.release(0, true);
       }
-      scroller.dom.addEventListener('wheel', handleDomScrollerWheel, { passive: false });
-      scroller.dom.addEventListener('touchstart', handleDomScrollerTouchStart, {
+      scroller.#dom.addEventListener('wheel', handleDomScrollerWheel, { passive: false });
+      scroller.#dom.addEventListener('touchstart', handleDomScrollerTouchStart, {
         passive: true,
       });
-      scroller.dom.addEventListener('touchmove', handleDomScrollerTouchMove, {
+      scroller.#dom.addEventListener('touchmove', handleDomScrollerTouchMove, {
         passive: false,
       });
-      scroller.dom.addEventListener('touchend', handleDomScrollerTouchEnd);
-      scroller.dom.addEventListener('touchcancel', handleDomScrollerTouchEnd);
+      scroller.#dom.addEventListener('touchend', handleDomScrollerTouchEnd);
+      scroller.#dom.addEventListener('touchcancel', handleDomScrollerTouchEnd);
       return function removeDomScrollerListeners(): void {
-        scroller.dom.removeEventListener('wheel', handleDomScrollerWheel);
-        scroller.dom.removeEventListener('touchstart', handleDomScrollerTouchStart);
-        scroller.dom.removeEventListener('touchmove', handleDomScrollerTouchMove);
-        scroller.dom.removeEventListener('touchend', handleDomScrollerTouchEnd);
-        scroller.dom.removeEventListener('touchcancel', handleDomScrollerTouchEnd);
-        scroller.clearWheelGestureEnd();
-        scroller.wheelAxisLock.reset();
-        scroller.touchAxisLock.reset();
-        scroller.rubberBand.reset();
+        scroller.#dom.removeEventListener('wheel', handleDomScrollerWheel);
+        scroller.#dom.removeEventListener('touchstart', handleDomScrollerTouchStart);
+        scroller.#dom.removeEventListener('touchmove', handleDomScrollerTouchMove);
+        scroller.#dom.removeEventListener('touchend', handleDomScrollerTouchEnd);
+        scroller.#dom.removeEventListener('touchcancel', handleDomScrollerTouchEnd);
+        scroller.#clearWheelGestureEnd();
+        scroller.#wheelAxisLock.reset();
+        scroller.#touchAxisLock.reset();
+        scroller.#rubberBand.reset();
       };
     };
   }
 
-  private updateFromInput(
+  #updateFromInput(
     manager: ScrollManager,
     updateState: (newState: ScrollManagerState) => void,
     deltaX: number,
@@ -126,7 +126,7 @@ export class WebScroller extends Scroller {
     const state = manager.getState();
     const [maxX, maxY] = manager.getContentBoundary();
     const [width, height] = manager.getShape();
-    const next = this.rubberBand.consume({
+    const next = this.#rubberBand.consume({
       position: state,
       boundary: { x: maxX, y: maxY },
       viewport: { x: width, y: height },
@@ -142,45 +142,45 @@ export class WebScroller extends Scroller {
     });
   }
 
-  private applyRubberBandOffset(offset: RubberBandOffset): void {
-    if (!this.dom.style) return;
+  #applyRubberBandOffset(offset: RubberBandOffset): void {
+    if (!this.#dom.style) return;
     if (offset.x === 0 && offset.y === 0) {
-      if (this.baseTranslate !== null) this.dom.style.translate = this.baseTranslate;
-      if (this.baseWillChange !== null) this.dom.style.willChange = this.baseWillChange;
-      if (this.baseClipPath !== null) this.dom.style.clipPath = this.baseClipPath;
-      this.baseTranslate = null;
-      this.baseWillChange = null;
-      this.baseClipPath = null;
+      if (this.#baseTranslate !== null) this.#dom.style.translate = this.#baseTranslate;
+      if (this.#baseWillChange !== null) this.#dom.style.willChange = this.#baseWillChange;
+      if (this.#baseClipPath !== null) this.#dom.style.clipPath = this.#baseClipPath;
+      this.#baseTranslate = null;
+      this.#baseWillChange = null;
+      this.#baseClipPath = null;
       return;
     }
-    if (this.baseTranslate === null) {
-      this.baseTranslate = this.dom.style.translate;
-      this.baseWillChange = this.dom.style.willChange;
-      this.baseClipPath = this.dom.style.clipPath;
+    if (this.#baseTranslate === null) {
+      this.#baseTranslate = this.#dom.style.translate;
+      this.#baseWillChange = this.#dom.style.willChange;
+      this.#baseClipPath = this.#dom.style.clipPath;
     }
-    this.dom.style.willChange = 'translate';
-    this.dom.style.translate = `${offset.x}px ${offset.y}px`;
-    this.dom.style.clipPath =
+    this.#dom.style.willChange = 'translate';
+    this.#dom.style.translate = `${offset.x}px ${offset.y}px`;
+    this.#dom.style.clipPath =
       `inset(${Math.max(0, -offset.y)}px ${Math.max(0, offset.x)}px ` +
       `${Math.max(0, offset.y)}px ${Math.max(0, -offset.x)}px)`;
   }
 
-  private queueWheelGestureEnd(): void {
-    if (this.wheelEndTimer !== null) this.platform.clearTimeout(this.wheelEndTimer);
-    this.wheelEndTimer = this.platform.setTimeout(
-      this.endWheelGesture.bind(this),
-      this.wheelAxisLock.getWheelEndDelay(),
+  #queueWheelGestureEnd(): void {
+    if (this.#wheelEndTimer !== null) this.#platform.clearTimeout(this.#wheelEndTimer);
+    this.#wheelEndTimer = this.#platform.setTimeout(
+      this.#endWheelGesture.bind(this),
+      this.#wheelAxisLock.getWheelEndDelay(),
     );
   }
 
-  private endWheelGesture(): void {
-    this.clearWheelGestureEnd();
-    this.wheelAxisLock.reset();
-    this.rubberBand.release(0);
+  #endWheelGesture(): void {
+    this.#clearWheelGestureEnd();
+    this.#wheelAxisLock.reset();
+    this.#rubberBand.release(0);
   }
 
-  private clearWheelGestureEnd(): void {
-    if (this.wheelEndTimer !== null) this.platform.clearTimeout(this.wheelEndTimer);
-    this.wheelEndTimer = null;
+  #clearWheelGestureEnd(): void {
+    if (this.#wheelEndTimer !== null) this.#platform.clearTimeout(this.#wheelEndTimer);
+    this.#wheelEndTimer = null;
   }
 }

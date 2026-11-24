@@ -35,24 +35,32 @@ const conditionOptions: Record<string, readonly [SheetFilterOperator, string][]>
 
 /** Web-only editor for the filter plugin's public command and query surface. */
 export class WebSheetFilterDialog {
-  private root: HTMLElement | null = null;
+  readonly #commands: SheetCommandBus;
+  readonly #queries: SheetQueryRegistry;
+  readonly #platform: Pick<Platform, 'toLowerCase'>;
+
+  #root: HTMLElement | null = null;
 
   public constructor(
-    private readonly commands: SheetCommandBus,
-    private readonly queries: SheetQueryRegistry,
-    private readonly platform: Pick<Platform, 'toLowerCase'>,
-  ) {}
+    commands: SheetCommandBus,
+    queries: SheetQueryRegistry,
+    platform: Pick<Platform, 'toLowerCase'>,
+  ) {
+    this.#commands = commands;
+    this.#queries = queries;
+    this.#platform = platform;
+  }
 
-  public destroy(): void { this.root?.remove(); this.root = null; }
+  public destroy(): void { this.#root?.remove(); this.#root = null; }
 
   public open(selectedColumn: number): void {
     this.destroy();
-    const filter = this.queries.run(ReadSheetFilterQuery, void 0);
+    const filter = this.#queries.run(ReadSheetFilterQuery, void 0);
     if (!filter) return;
     const closePanel = () => {
-      const current = this.queries.run(ReadSheetFilterQuery, void 0);
+      const current = this.#queries.run(ReadSheetFilterQuery, void 0);
       if (filter.privateView && filter.rules.length === 0 && current?.privateView && current.rules.length === 0)
-        this.commands.run(ClearSheetFilterCommand, void 0);
+        this.#commands.run(ClearSheetFilterCommand, void 0);
       this.destroy();
     };
     const root = document.createElement('div');
@@ -70,8 +78,8 @@ export class WebSheetFilterDialog {
     columnLabel.textContent = 'Column';
     const column = document.createElement('select');
     column.setAttribute('aria-label', 'Filter column');
-    const cells = this.queries.has(ReadSheetCellDataQuery)
-      ? this.queries.run(ReadSheetCellDataQuery, void 0) : null;
+    const cells = this.#queries.has(ReadSheetCellDataQuery)
+      ? this.#queries.run(ReadSheetCellDataQuery, void 0) : null;
     for (let index = filter.range.start[1]; index <= filter.range.end[1]; index += 1) {
       const option = document.createElement('option');
       const value = filter.firstRowIsHeader ? cells?.getItem(filter.range.start[0], index)?.value : null;
@@ -105,7 +113,7 @@ export class WebSheetFilterDialog {
     ] as const) {
       const button = commandButton(label, label, () => {
         try {
-          this.commands.run(SortSheetRangeCommand, {
+          this.#commands.run(SortSheetRangeCommand, {
             range: filter.range, keys: [{ column: Number(column.value), direction }],
             firstRowIsHeader: header.checked,
           });
@@ -114,7 +122,7 @@ export class WebSheetFilterDialog {
           status.textContent = error instanceof Error ? error.message : 'Sort failed';
         }
       });
-      button.disabled = !this.commands.has(SortSheetRangeCommand);
+      button.disabled = !this.#commands.has(SortSheetRangeCommand);
       sorting.append(button);
     }
     const body = document.createElement('div');
@@ -130,7 +138,7 @@ export class WebSheetFilterDialog {
     const actions = document.createElement('div');
     actions.className = 'sear-sheet-filter-actions';
     const clear = commandButton('Clear column', 'Clear filter for this column', () => {
-      this.commands.run(SetSheetColumnFilterCommand, { column: Number(column.value), predicate: null });
+      this.#commands.run(SetSheetColumnFilterCommand, { column: Number(column.value), predicate: null });
       this.destroy();
     });
     const cancel = commandButton('Close', 'Automatically applied changes take effect immediately; closing will not undo them', closePanel);
@@ -141,7 +149,7 @@ export class WebSheetFilterDialog {
     root.addEventListener('click', (event) => { if (event.target === root) closePanel(); });
     root.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePanel(); });
     document.body.append(root);
-    this.root = root;
+    this.#root = root;
 
     let currentMode: FilterMode = filter.rules.find((rule) => rule.column === Number(column.value))?.predicate.kind ?? 'values';
     let currentColumn = Number(column.value);
@@ -170,8 +178,8 @@ export class WebSheetFilterDialog {
         const includeCurrent = autoApply.checked || dirtyColumns.has(currentColumn) || updates.size === 0;
         if (includeCurrent) updates.set(currentColumn, readPredicate(body, currentMode, valueSelections.get(currentColumn)));
         const entries = [...updates].map(([entryColumn, predicate]) => ({ column: entryColumn, predicate }));
-        if (entries.length === 1) this.commands.run(SetSheetColumnFilterCommand, entries[0]!);
-        else this.commands.run(SetSheetColumnFiltersCommand, { updates: entries });
+        if (entries.length === 1) this.#commands.run(SetSheetColumnFilterCommand, entries[0]!);
+        else this.#commands.run(SetSheetColumnFiltersCommand, { updates: entries });
         pendingPredicates.clear();
         dirtyColumns.clear();
         if (includeCurrent) clear.disabled = updates.get(currentColumn) === null;
@@ -179,7 +187,7 @@ export class WebSheetFilterDialog {
         if (closeOnSuccess) this.destroy();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Filter failed';
-        const existingRule = this.queries.run(ReadSheetFilterQuery, void 0)?.rules
+        const existingRule = this.#queries.run(ReadSheetFilterQuery, void 0)?.rules
           .some((entry) => entry.column === Number(column.value));
         status.textContent = closeOnSuccess ? message
           : `${message}; ${existingRule ? 'the previous filter is still active' : 'the current condition has not taken effect'}`;
@@ -196,7 +204,7 @@ export class WebSheetFilterDialog {
     });
 
     const refresh = () => {
-      const definition = this.queries.run(ReadSheetFilterQuery, void 0) ?? filter;
+      const definition = this.#queries.run(ReadSheetFilterQuery, void 0) ?? filter;
       const selected = Number(column.value);
       const rule = pendingPredicates.has(selected) ? pendingPredicates.get(selected) ?? undefined
         : definition.rules.find((entry) => entry.column === selected)?.predicate;
@@ -226,7 +234,7 @@ export class WebSheetFilterDialog {
             : { defaultSelected: true, exceptions: new Set() };
           valueSelections.set(index, selection);
         }
-        this.renderValues(body, index, selection, applyAutomatically);
+        this.#renderValues(body, index, selection, applyAutomatically);
       }
       else if (currentMode === 'condition')
         renderCondition(body, conditionDrafts.get(Number(column.value)) ?? rule, applyAutomatically,
@@ -253,7 +261,7 @@ export class WebSheetFilterDialog {
     });
     header.addEventListener('change', () => {
       try {
-        this.commands.run(SetSheetFilterHeaderCommand, { firstRowIsHeader: header.checked });
+        this.#commands.run(SetSheetFilterHeaderCommand, { firstRowIsHeader: header.checked });
         updateColumnLabels(header.checked);
         refresh();
       } catch (error) {
@@ -265,10 +273,10 @@ export class WebSheetFilterDialog {
     column.focus();
   }
 
-  private renderValues(
+  #renderValues(
     body: HTMLElement, column: number, selection: ValueSelection, onChange: () => void,
   ): void {
-    const matchKey = (value: string) => this.platform.toLowerCase(value);
+    const matchKey = (value: string) => this.#platform.toLowerCase(value);
     const hasValue = (value: string) => [...selection.exceptions].some((entry) => matchKey(entry) === matchKey(value));
     const deleteValue = (value: string) => {
       const key = matchKey(value);
@@ -280,7 +288,7 @@ export class WebSheetFilterDialog {
     };
     const search = document.createElement('input');
     search.type = 'search'; search.placeholder = 'Search values'; search.setAttribute('aria-label', 'Search filter values');
-    const readPage = () => this.queries.run(ReadSheetFilterValuesQuery, {
+    const readPage = () => this.#queries.run(ReadSheetFilterValuesQuery, {
       column, search: search.value,
       includeBlank: !!search.value && ['(Blank cell)', '(Blank)'].some((label) => label.toLowerCase().includes(search.value.toLowerCase())),
     });

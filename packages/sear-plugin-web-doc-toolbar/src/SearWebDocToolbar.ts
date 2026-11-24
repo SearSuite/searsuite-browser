@@ -143,131 +143,134 @@ const DOC_INLINE_STYLE_CONTROLS = [
 
 /** Browser toolbar adapter for standalone Doc editors. */
 export class SearWebDocToolbar extends SearToolbar {
-  public static readonly symbol = Symbol.for('SearWebDocToolbar');
-  private container: HTMLElement | null = null;
-  private root: HTMLElement | null = null;
-  private styleElement: HTMLStyleElement | null = null;
-  private morePanel: HTMLElement | null = null;
-  private disposeObservation: (() => void) | null = null;
-  private inlineStyleState: DocInlineStyleState | null = null;
+  readonly #editor: Pick<DocEditor, 'commands' | 'observations'>;
 
-  public constructor(private readonly editor: Pick<DocEditor, 'commands' | 'observations'>) {
+  public static readonly symbol = Symbol.for('SearWebDocToolbar');
+  #container: HTMLElement | null = null;
+  #root: HTMLElement | null = null;
+  #styleElement: HTMLStyleElement | null = null;
+  #morePanel: HTMLElement | null = null;
+  #disposeObservation: (() => void) | null = null;
+  #inlineStyleState: DocInlineStyleState | null = null;
+
+  public constructor(editor: Pick<DocEditor, 'commands' | 'observations'>) {
     super();
+    this.#editor = editor;
   }
 
   public mount(target: unknown): void {
     this.destroy();
-    this.container = target as HTMLElement;
+    this.#container = target as HTMLElement;
     const style = document.createElement('style');
     style.setAttribute('data-sear-doc-toolbar', '');
     style.textContent = `${TOOLBAR_CSS}\n${DOC_TOOLBAR_CSS}`;
     document.head.appendChild(style);
-    this.styleElement = style;
+    this.#styleElement = style;
 
     const root = document.createElement('div');
     root.className = 'sear-toolbar sear-doc-toolbar';
     root.setAttribute('data-role', 'doc-toolbar');
-    root.appendChild(this.renderToolbar());
-    this.container.appendChild(root);
-    this.root = root;
-    this.bindObservations();
+    root.appendChild(this.#renderToolbar());
+    this.#container.appendChild(root);
+    this.#root = root;
+    this.#bindObservations();
   }
 
   public destroy(): void {
-    this.disposeObservation?.();
-    this.disposeObservation = null;
-    this.inlineStyleState = null;
-    this.closeMorePanel();
-    this.root?.remove();
-    this.styleElement?.remove();
-    this.root = null;
-    this.container = null;
-    this.styleElement = null;
+    this.#disposeObservation?.();
+    this.#disposeObservation = null;
+    this.#inlineStyleState = null;
+    this.#closeMorePanel();
+    this.#root?.remove();
+    this.#styleElement?.remove();
+    this.#root = null;
+    this.#container = null;
+    this.#styleElement = null;
   }
 
-  private renderToolbar(): HTMLElement {
+  #renderToolbar(): HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'we-toolbar-wrapper';
     const line = document.createElement('div');
     line.className = 'style__LineWrap-wd3__sc-qvsygq-2';
     line.append(
-      this.renderGroup([
-        this.renderButton({ id: 'doc-menu', label: 'Menu', icon: icon('menu') }),
-        this.renderButton({
+      this.#renderGroup([
+        this.#renderButton({ id: 'doc-menu', label: 'Menu', icon: icon('menu') }),
+        this.#renderButton({
           id: 'doc-insert',
           label: 'Insert',
           icon: icon('plus'),
-          command: () => this.insertTable(),
-          enabled: this.commands.has(InsertDocTableCommand),
+          command: () => this.#insertTable(),
+          enabled: this.#commands.has(InsertDocTableCommand),
         }),
       ]),
-      this.renderGroup([
-        this.renderIconButton(
+      this.#renderGroup([
+        this.#renderIconButton(
           'doc-undo',
           icon('undo'),
-          () => this.commands.run(UndoDocCommand, void 0),
+          () => this.#commands.run(UndoDocCommand, void 0),
           UndoDocCommand,
         ),
-        this.renderIconButton(
+        this.#renderIconButton(
           'doc-redo',
           icon('redo'),
-          () => this.commands.run(RedoDocCommand, void 0),
+          () => this.#commands.run(RedoDocCommand, void 0),
           RedoDocCommand,
         ),
       ]),
-      this.renderGroup([
-        this.renderBoldButton(),
-        this.renderItalicButton(),
-        this.renderUnderlineButton(),
-        this.renderStrikethroughButton(),
+      this.#renderGroup([
+        this.#renderBoldButton(),
+        this.#renderItalicButton(),
+        this.#renderUnderlineButton(),
+        this.#renderStrikethroughButton(),
       ]),
-      this.renderGroup([
-        this.renderFontFamilySelect(),
-        this.renderDisabledSelect('doc-heading', 'Body text', 'Paragraph style'),
-        this.renderFontSizeSelect(),
+      this.#renderGroup([
+        this.#renderFontFamilySelect(),
+        this.#renderDisabledSelect('doc-heading', 'Body text', 'Paragraph style'),
+        this.#renderFontSizeSelect(),
       ]),
-      this.renderGroup([
-        this.renderDisabledIconButton('doc-font-color', icon('fontColor'), 'Text color'),
-        this.renderDisabledIconButton('doc-highlight', icon('highlight'), 'Highlight'),
-        this.renderDisabledIconButton('doc-line-height', icon('lineHeight'), 'Line spacing'),
-        this.renderDisabledIconButton('doc-align', icon('align'), 'Align'),
-        this.renderDisabledIconButton('doc-indent-decrease', icon('indentDecrease'), 'Decrease indent'),
-        this.renderDisabledIconButton('doc-indent-increase', icon('indentIncrease'), 'Increase indent'),
+      this.#renderGroup([
+        this.#renderDisabledIconButton('doc-font-color', icon('fontColor'), 'Text color'),
+        this.#renderDisabledIconButton('doc-highlight', icon('highlight'), 'Highlight'),
+        this.#renderDisabledIconButton('doc-line-height', icon('lineHeight'), 'Line spacing'),
+        this.#renderDisabledIconButton('doc-align', icon('align'), 'Align'),
+        this.#renderDisabledIconButton('doc-indent-decrease', icon('indentDecrease'), 'Decrease indent'),
+        this.#renderDisabledIconButton('doc-indent-increase', icon('indentIncrease'), 'Increase indent'),
       ]),
-      this.renderGroup([
-        this.renderDisabledIconButton('doc-list-unordered', icon('listUnordered'), 'Bulleted list'),
-        this.renderDisabledIconButton('doc-list-ordered', icon('listOrdered'), 'Numbered list'),
-        this.renderDisabledIconButton('doc-list-task', icon('listTask'), 'Task list'),
-        this.renderDisabledIconButton('doc-link', icon('link'), 'Link'),
-        this.renderDisabledIconButton('doc-search', icon('search'), 'Find and replace'),
-        this.renderDisabledIconButton('doc-mention', icon('mention'), '@mention'),
-        this.renderDisabledIconButton('doc-comment', icon('comment'), 'Comment'),
+      this.#renderGroup([
+        this.#renderDisabledIconButton('doc-list-unordered', icon('listUnordered'), 'Bulleted list'),
+        this.#renderDisabledIconButton('doc-list-ordered', icon('listOrdered'), 'Numbered list'),
+        this.#renderDisabledIconButton('doc-list-task', icon('listTask'), 'Task list'),
+        this.#renderDisabledIconButton('doc-link', icon('link'), 'Link'),
+        this.#renderDisabledIconButton('doc-search', icon('search'), 'Find and replace'),
+        this.#renderDisabledIconButton('doc-mention', icon('mention'), '@mention'),
+        this.#renderDisabledIconButton('doc-comment', icon('comment'), 'Comment'),
       ]),
-      this.renderGroup([
-        this.renderDisabledIconButton('doc-format-painter', icon('painter'), 'Format painter'),
-        this.renderDisabledIconButton('doc-clear-format', icon('eraser'), 'Clear formatting'),
-        this.renderDisabledIconButton('doc-ai', icon('ai'), 'AI writing'),
+      this.#renderGroup([
+        this.#renderDisabledIconButton('doc-format-painter', icon('painter'), 'Format painter'),
+        this.#renderDisabledIconButton('doc-clear-format', icon('eraser'), 'Clear formatting'),
+        this.#renderDisabledIconButton('doc-ai', icon('ai'), 'AI writing'),
       ]),
-      this.renderMoreButton(),
+      this.#renderMoreButton(),
     );
     wrapper.appendChild(line);
     return wrapper;
   }
 
-  private renderMoreButton(): HTMLElement {
-    const button = this.renderButton({ id: 'doc-more', label: 'More', icon: icon('more') });
+  #renderMoreButton(): HTMLElement {
+    const button = this.#renderButton({ id: 'doc-more', label: 'More', icon: icon('more') });
     button.classList.remove('disabled');
     if (button instanceof HTMLButtonElement) button.disabled = false;
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      this.toggleMorePanel(button);
+      this.#toggleMorePanel(button);
     });
     return button;
   }
 
-  private toggleMorePanel(anchor: HTMLElement): void {
-    if (this.morePanel) {
-      this.closeMorePanel();
+  #toggleMorePanel(anchor: HTMLElement): void {
+    if (this.#morePanel) {
+      this.#closeMorePanel();
       return;
     }
     const panel = document.createElement('div');
@@ -278,35 +281,35 @@ export class SearWebDocToolbar extends SearToolbar {
         id: 'doc-more-insert-table',
         label: 'Insert table',
         icon: icon('plus'),
-        enabled: this.commands.has(InsertDocTableCommand),
-        action: () => this.insertTable(),
+        enabled: this.#commands.has(InsertDocTableCommand),
+        action: () => this.#insertTable(),
       },
       {
         id: 'doc-more-italic',
         label: 'Italic',
         icon: icon('italic'),
         enabled:
-          this.isStyleCommandAvailable(ToggleDocItalicCommand, SetDocItalicCommand) &&
-          this.inlineStyleState?.['italic']?.enabled === true,
-        action: () => this.toggleItalic(),
+          this.#isStyleCommandAvailable(ToggleDocItalicCommand, SetDocItalicCommand) &&
+          this.#inlineStyleState?.['italic']?.enabled === true,
+        action: () => this.#toggleItalic(),
       },
       {
         id: 'doc-more-underline',
         label: 'Underline',
         icon: icon('underline'),
         enabled:
-          this.isStyleCommandAvailable(ToggleDocUnderlineCommand, SetDocUnderlineCommand) &&
-          this.inlineStyleState?.['underline']?.enabled === true,
-        action: () => this.toggleUnderline(),
+          this.#isStyleCommandAvailable(ToggleDocUnderlineCommand, SetDocUnderlineCommand) &&
+          this.#inlineStyleState?.['underline']?.enabled === true,
+        action: () => this.#toggleUnderline(),
       },
       {
         id: 'doc-more-strike',
         label: 'Strikethrough',
         icon: icon('strike'),
         enabled:
-          this.isStyleCommandAvailable(ToggleDocStrikethroughCommand, SetDocStrikethroughCommand) &&
-          this.inlineStyleState?.['strikethrough']?.enabled === true,
-        action: () => this.toggleStrikethrough(),
+          this.#isStyleCommandAvailable(ToggleDocStrikethroughCommand, SetDocStrikethroughCommand) &&
+          this.#inlineStyleState?.['strikethrough']?.enabled === true,
+        action: () => this.#toggleStrikethrough(),
       },
       { id: 'doc-more-font-color', label: 'Text color', icon: icon('fontColor') },
       { id: 'doc-more-align', label: 'Paragraph alignment', icon: icon('align') },
@@ -323,7 +326,7 @@ export class SearWebDocToolbar extends SearToolbar {
       if (item.action)
         entry.addEventListener('click', () => {
           item.action?.();
-          this.closeMorePanel();
+          this.#closeMorePanel();
         });
       panel.appendChild(entry);
     });
@@ -331,46 +334,46 @@ export class SearWebDocToolbar extends SearToolbar {
     panel.style.left = `${Math.max(8, rect.left)}px`;
     panel.style.top = `${rect.bottom + 6}px`;
     document.body.appendChild(panel);
-    this.morePanel = panel;
-    if (this.inlineStyleState) this.applyInlineStyleState(this.inlineStyleState);
-    document.addEventListener('pointerdown', this.handleMoreOutsideClick, true);
+    this.#morePanel = panel;
+    if (this.#inlineStyleState) this.#applyInlineStyleState(this.#inlineStyleState);
+    document.addEventListener('pointerdown', this.#handleMoreOutsideClick, true);
   }
 
-  private closeMorePanel = (): void => {
-    this.morePanel?.remove();
-    this.morePanel = null;
-    document.removeEventListener('pointerdown', this.handleMoreOutsideClick, true);
+  #closeMorePanel = (): void => {
+    this.#morePanel?.remove();
+    this.#morePanel = null;
+    document.removeEventListener('pointerdown', this.#handleMoreOutsideClick, true);
   };
 
-  private handleMoreOutsideClick = (event: Event): void => {
-    if (this.morePanel && !this.morePanel.contains(event.target as Node)) this.closeMorePanel();
+  #handleMoreOutsideClick = (event: Event): void => {
+    if (this.#morePanel && !this.#morePanel.contains(event.target as Node)) this.#closeMorePanel();
   };
 
-  private bindObservations(): void {
-    this.disposeObservation = this.editor.observations.subscribe(DocInlineStyleObservation, (state) => {
-      this.inlineStyleState = state;
-      this.applyInlineStyleState(state);
+  #bindObservations(): void {
+    this.#disposeObservation = this.#editor.observations.subscribe(DocInlineStyleObservation, (state) => {
+      this.#inlineStyleState = state;
+      this.#applyInlineStyleState(state);
     });
   }
 
-  private applyInlineStyleState(state: DocInlineStyleState): void {
+  #applyInlineStyleState(state: DocInlineStyleState): void {
     DOC_INLINE_STYLE_CONTROLS.forEach((control) => {
       const status = state[control.styleKey] ?? DISABLED_DOC_INLINE_STYLE_STATUS;
       if (control.kind === 'value') {
-        this.updateInlineStyleValue(control, status);
+        this.#updateInlineStyleValue(control, status);
         return;
       }
-      this.updateInlineStyleButton(control.id, status, this.isStyleCommandAvailable(control.toggle, control.set));
+      this.#updateInlineStyleButton(control.id, status, this.#isStyleCommandAvailable(control.toggle, control.set));
     });
   }
 
-  private updateInlineStyleValue(
+  #updateInlineStyleValue(
     control: Extract<DocInlineStyleControl, { readonly kind: 'value' }>,
     status: DocInlineStyleState[string],
   ): void {
-    const select = this.root?.querySelector<HTMLSelectElement>(`[data-testid="${control.id}"]`);
+    const select = this.#root?.querySelector<HTMLSelectElement>(`[data-testid="${control.id}"]`);
     if (!select) return;
-    const enabled = this.commands.has(control.command.id) && status.enabled;
+    const enabled = this.#commands.has(control.command.id) && status.enabled;
     select.disabled = !enabled;
     select.classList.toggle('disabled', !enabled);
 
@@ -386,10 +389,10 @@ export class SearWebDocToolbar extends SearToolbar {
     select.value = value;
   }
 
-  private updateInlineStyleButton(id: string, status: DocInlineStyleState[string], commandAvailable: boolean): void {
+  #updateInlineStyleButton(id: string, status: DocInlineStyleState[string], commandAvailable: boolean): void {
     const button =
-      this.root?.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`) ??
-      this.morePanel?.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+      this.#root?.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`) ??
+      this.#morePanel?.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
     if (!button) return;
     const enabled = commandAvailable && status.enabled;
     button.disabled = !enabled;
@@ -397,21 +400,21 @@ export class SearWebDocToolbar extends SearToolbar {
     button.classList.toggle('wd3-toolbar-item-active', enabled && status.active);
   }
 
-  private isStyleCommandAvailable(
+  #isStyleCommandAvailable(
     toggleCommand: { readonly id: string },
     setCommand: { readonly id: string },
   ): boolean {
-    return this.commands.has(toggleCommand.id) || this.commands.has(setCommand.id);
+    return this.#commands.has(toggleCommand.id) || this.#commands.has(setCommand.id);
   }
 
-  private renderGroup(children: readonly HTMLElement[]): HTMLElement {
+  #renderGroup(children: readonly HTMLElement[]): HTMLElement {
     const group = document.createElement('div');
     group.className = 'style__Group-wd3__sc-qvsygq-3';
     children.forEach((child) => group.appendChild(child));
     return group;
   }
 
-  private renderButton(button: DocToolbarButton): HTMLElement {
+  #renderButton(button: DocToolbarButton): HTMLElement {
     const element = document.createElement('button');
     element.type = 'button';
     element.className = 'wd3-toolbar-item wd3-toolbar-icon-button large';
@@ -419,127 +422,127 @@ export class SearWebDocToolbar extends SearToolbar {
     element.title = button.label;
     element.innerHTML = `<span class="wd3-toolbar-icon">${button.icon}</span><span class="doc-toolbar-label">${button.label}</span>`;
     if (button.command && button.enabled !== false) element.addEventListener('click', button.command);
-    else this.disable(element);
+    else this.#disable(element);
     return element;
   }
 
-  private renderIconButton(id: string, svg: string, action: () => void, command: { readonly id: string }): HTMLElement {
+  #renderIconButton(id: string, svg: string, action: () => void, command: { readonly id: string }): HTMLElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'wd3-toolbar-item wd3-toolbar-icon-button small';
     button.dataset['testid'] = id;
     button.title = command.id;
     button.innerHTML = `<span class="wd3-toolbar-icon">${svg}</span>`;
-    if (this.commands.has(command.id)) button.addEventListener('click', action);
-    else this.disable(button);
+    if (this.#commands.has(command.id)) button.addEventListener('click', action);
+    else this.#disable(button);
     return button;
   }
 
-  private renderBoldButton(): HTMLElement {
-    if (this.commands.has(ToggleDocBoldCommand)) {
-      return this.renderIconButton(
+  #renderBoldButton(): HTMLElement {
+    if (this.#commands.has(ToggleDocBoldCommand)) {
+      return this.#renderIconButton(
         'doc-bold',
         icon('bold'),
-        () => this.commands.run(ToggleDocBoldCommand, void 0),
+        () => this.#commands.run(ToggleDocBoldCommand, void 0),
         ToggleDocBoldCommand,
       );
     }
-    if (this.commands.has(SetDocBoldCommand)) {
-      return this.renderIconButton(
+    if (this.#commands.has(SetDocBoldCommand)) {
+      return this.#renderIconButton(
         'doc-bold',
         icon('bold'),
-        () => this.commands.run(SetDocBoldCommand, { bold: true }),
+        () => this.#commands.run(SetDocBoldCommand, { bold: true }),
         SetDocBoldCommand,
       );
     }
-    return this.renderDisabledIconButton('doc-bold', icon('bold'), 'Bold');
+    return this.#renderDisabledIconButton('doc-bold', icon('bold'), 'Bold');
   }
 
-  private renderItalicButton(): HTMLElement {
-    if (this.commands.has(ToggleDocItalicCommand)) {
-      return this.renderIconButton('doc-italic', icon('italic'), () => this.toggleItalic(), ToggleDocItalicCommand);
+  #renderItalicButton(): HTMLElement {
+    if (this.#commands.has(ToggleDocItalicCommand)) {
+      return this.#renderIconButton('doc-italic', icon('italic'), () => this.#toggleItalic(), ToggleDocItalicCommand);
     }
-    if (this.commands.has(SetDocItalicCommand)) {
-      return this.renderIconButton(
+    if (this.#commands.has(SetDocItalicCommand)) {
+      return this.#renderIconButton(
         'doc-italic',
         icon('italic'),
-        () => this.commands.run(SetDocItalicCommand, { italic: true }),
+        () => this.#commands.run(SetDocItalicCommand, { italic: true }),
         SetDocItalicCommand,
       );
     }
-    return this.renderDisabledIconButton('doc-italic', icon('italic'), 'Italic');
+    return this.#renderDisabledIconButton('doc-italic', icon('italic'), 'Italic');
   }
 
-  private renderUnderlineButton(): HTMLElement {
-    if (this.commands.has(ToggleDocUnderlineCommand)) {
-      return this.renderIconButton(
+  #renderUnderlineButton(): HTMLElement {
+    if (this.#commands.has(ToggleDocUnderlineCommand)) {
+      return this.#renderIconButton(
         'doc-underline',
         icon('underline'),
-        () => this.toggleUnderline(),
+        () => this.#toggleUnderline(),
         ToggleDocUnderlineCommand,
       );
     }
-    if (this.commands.has(SetDocUnderlineCommand)) {
-      return this.renderIconButton(
+    if (this.#commands.has(SetDocUnderlineCommand)) {
+      return this.#renderIconButton(
         'doc-underline',
         icon('underline'),
-        () => this.commands.run(SetDocUnderlineCommand, { underline: true }),
+        () => this.#commands.run(SetDocUnderlineCommand, { underline: true }),
         SetDocUnderlineCommand,
       );
     }
-    return this.renderDisabledIconButton('doc-underline', icon('underline'), 'Underline');
+    return this.#renderDisabledIconButton('doc-underline', icon('underline'), 'Underline');
   }
 
-  private renderStrikethroughButton(): HTMLElement {
-    if (this.commands.has(ToggleDocStrikethroughCommand)) {
-      return this.renderIconButton(
+  #renderStrikethroughButton(): HTMLElement {
+    if (this.#commands.has(ToggleDocStrikethroughCommand)) {
+      return this.#renderIconButton(
         'doc-strike',
         icon('strike'),
-        () => this.toggleStrikethrough(),
+        () => this.#toggleStrikethrough(),
         ToggleDocStrikethroughCommand,
       );
     }
-    if (this.commands.has(SetDocStrikethroughCommand)) {
-      return this.renderIconButton(
+    if (this.#commands.has(SetDocStrikethroughCommand)) {
+      return this.#renderIconButton(
         'doc-strike',
         icon('strike'),
-        () => this.commands.run(SetDocStrikethroughCommand, { strikethrough: true }),
+        () => this.#commands.run(SetDocStrikethroughCommand, { strikethrough: true }),
         SetDocStrikethroughCommand,
       );
     }
-    return this.renderDisabledIconButton('doc-strike', icon('strike'), 'Strikethrough');
+    return this.#renderDisabledIconButton('doc-strike', icon('strike'), 'Strikethrough');
   }
 
-  private toggleItalic(): void {
-    if (this.commands.has(ToggleDocItalicCommand)) this.commands.run(ToggleDocItalicCommand, void 0);
-    else if (this.commands.has(SetDocItalicCommand)) this.commands.run(SetDocItalicCommand, { italic: true });
+  #toggleItalic(): void {
+    if (this.#commands.has(ToggleDocItalicCommand)) this.#commands.run(ToggleDocItalicCommand, void 0);
+    else if (this.#commands.has(SetDocItalicCommand)) this.#commands.run(SetDocItalicCommand, { italic: true });
   }
 
-  private toggleUnderline(): void {
-    if (this.commands.has(ToggleDocUnderlineCommand)) this.commands.run(ToggleDocUnderlineCommand, void 0);
-    else if (this.commands.has(SetDocUnderlineCommand)) this.commands.run(SetDocUnderlineCommand, { underline: true });
+  #toggleUnderline(): void {
+    if (this.#commands.has(ToggleDocUnderlineCommand)) this.#commands.run(ToggleDocUnderlineCommand, void 0);
+    else if (this.#commands.has(SetDocUnderlineCommand)) this.#commands.run(SetDocUnderlineCommand, { underline: true });
   }
 
-  private toggleStrikethrough(): void {
-    if (this.commands.has(ToggleDocStrikethroughCommand)) {
-      this.commands.run(ToggleDocStrikethroughCommand, void 0);
-    } else if (this.commands.has(SetDocStrikethroughCommand)) {
-      this.commands.run(SetDocStrikethroughCommand, { strikethrough: true });
+  #toggleStrikethrough(): void {
+    if (this.#commands.has(ToggleDocStrikethroughCommand)) {
+      this.#commands.run(ToggleDocStrikethroughCommand, void 0);
+    } else if (this.#commands.has(SetDocStrikethroughCommand)) {
+      this.#commands.run(SetDocStrikethroughCommand, { strikethrough: true });
     }
   }
 
-  private renderDisabledButton(id: string, text: string, label: string): HTMLElement {
+  #renderDisabledButton(id: string, text: string, label: string): HTMLElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset['testid'] = id;
     button.title = label;
     button.textContent = text;
     button.className = 'wd3-toolbar-item wd3-toolbar-icon-button small';
-    this.disable(button);
+    this.#disable(button);
     return button;
   }
 
-  private renderDisabledIconButton(id: string, svg: string, label: string): HTMLElement {
+  #renderDisabledIconButton(id: string, svg: string, label: string): HTMLElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset['testid'] = id;
@@ -550,7 +553,7 @@ export class SearWebDocToolbar extends SearToolbar {
     return button;
   }
 
-  private renderDisabledSelect(id: string, value: string, label: string): HTMLElement {
+  #renderDisabledSelect(id: string, value: string, label: string): HTMLElement {
     const select = document.createElement('button');
     select.type = 'button';
     select.dataset['testid'] = id;
@@ -561,7 +564,7 @@ export class SearWebDocToolbar extends SearToolbar {
     return select;
   }
 
-  private renderFontFamilySelect(): HTMLElement {
+  #renderFontFamilySelect(): HTMLElement {
     const select = document.createElement('select');
     select.dataset['testid'] = 'doc-font-family';
     select.title = 'Font';
@@ -573,17 +576,17 @@ export class SearWebDocToolbar extends SearToolbar {
       option.style.fontFamily = font.value || 'inherit';
       select.appendChild(option);
     });
-    if (!this.commands.has(SetDocFontFamilyCommand)) {
-      this.disable(select);
+    if (!this.#commands.has(SetDocFontFamilyCommand)) {
+      this.#disable(select);
       return select;
     }
     select.addEventListener('change', () => {
-      this.commands.run(SetDocFontFamilyCommand, { fontFamily: select.value || null });
+      this.#commands.run(SetDocFontFamilyCommand, { fontFamily: select.value || null });
     });
     return select;
   }
 
-  private renderFontSizeSelect(): HTMLElement {
+  #renderFontSizeSelect(): HTMLElement {
     const select = document.createElement('select');
     select.dataset['testid'] = 'doc-font-size';
     select.title = 'Font size';
@@ -595,29 +598,29 @@ export class SearWebDocToolbar extends SearToolbar {
       if (size.value === '12') option.selected = true;
       select.appendChild(option);
     });
-    if (!this.commands.has(SetDocFontSizeCommand)) {
-      this.disable(select);
+    if (!this.#commands.has(SetDocFontSizeCommand)) {
+      this.#disable(select);
       return select;
     }
     select.addEventListener('change', () => {
-      this.commands.run(SetDocFontSizeCommand, {
+      this.#commands.run(SetDocFontSizeCommand, {
         fontSize: select.value ? Number(select.value) : null,
       });
     });
     return select;
   }
 
-  private disable(element: HTMLElement): void {
+  #disable(element: HTMLElement): void {
     element.classList.add('disabled');
     if (element instanceof HTMLButtonElement || element instanceof HTMLSelectElement) element.disabled = true;
   }
 
-  private insertTable(): void {
-    this.commands.run(InsertDocTableCommand, { rows: 2, columns: 2 });
+  #insertTable(): void {
+    this.#commands.run(InsertDocTableCommand, { rows: 2, columns: 2 });
   }
 
-  private get commands(): DocCommandBus {
-    return this.editor.commands;
+  get #commands(): DocCommandBus {
+    return this.#editor.commands;
   }
 }
 

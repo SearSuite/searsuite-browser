@@ -1,3 +1,6 @@
+import { imageHref, imageWidth, imageHeight, readSvgDimension } from '../../src/sear-render-context/SvgImageSource';
+import { normalizePathData, normalizeTranslatedElement } from '../../src/sear-render-context/SvgTranslatedGeometry';
+import { getLargeTranslationNormalization } from '../../src/sear-render-context/WebRenderTransform';
 import { WebSvgRenderContext } from '../../src/sear-render-context/WebSvgRenderContext';
 import { type Platform } from '@searsuite/sear-foundation-platform';
 import { BrowserPlatform } from '@searsuite/sear-browser-adapters';
@@ -118,9 +121,10 @@ describe('WebSvgRenderContext', () => {
   });
 
   it('uses maxWidth only to compress text wider than the available space', () => {
+    const getContext = jest.mocked(HTMLCanvasElement.prototype.getContext);
     const context = createContext();
-    const raster = (context as any).rasterContext;
-    raster.measureText = jest.fn((text: string) => ({ width: text === 'short' ? 20 : 150 }));
+    const raster = getContext.mock.results.at(-1)!.value as CanvasRenderingContext2D;
+    raster.measureText = jest.fn((text: string) => ({ width: text === 'short' ? 20 : 150 } as TextMetrics));
 
     context.fillText('short', 0, 12, 100);
     context.fillText('long', 0, 24, 100);
@@ -386,36 +390,25 @@ describe('WebSvgRenderContext', () => {
   });
 
   it('keeps invalid large-translation geometry unchanged', () => {
-    const context = createContext() as unknown as {
-      normalizeTranslatedElement(
-        element: SVGElement,
-        transform: [number, number, number, number, number, number],
-      ): [number, number, number, number, number, number];
-    };
-    const contextType = WebSvgRenderContext as unknown as {
-      getLargeTranslationNormalization(transform: [number, number, number, number, number, number]): unknown;
-      normalizePathData(data: string, offsetX: number, offsetY: number): string | null;
-    };
-
-    expect(contextType.getLargeTranslationNormalization([1, 0, 0, 1, 1, 1])).toBeNull();
-    expect(contextType.getLargeTranslationNormalization([1, 0, 1, 0, 20_000_000, 0])).toBeNull();
-    expect(contextType.getLargeTranslationNormalization([1e-308, 0, 0, 1, Number.MAX_VALUE, 0])).toBeNull();
-    expect(contextType.normalizePathData('', 1, 1)).toBeNull();
-    expect(contextType.normalizePathData('M 1', 1, 1)).toBeNull();
-    expect(contextType.normalizePathData('H', 1, 1)).toBeNull();
-    expect(contextType.normalizePathData('V', 1, 1)).toBeNull();
-    expect(contextType.normalizePathData('Q 1 2', 1, 1)).toBeNull();
+    expect(getLargeTranslationNormalization([1, 0, 0, 1, 1, 1])).toBeNull();
+    expect(getLargeTranslationNormalization([1, 0, 1, 0, 20_000_000, 0])).toBeNull();
+    expect(getLargeTranslationNormalization([1e-308, 0, 0, 1, Number.MAX_VALUE, 0])).toBeNull();
+    expect(normalizePathData('', 1, 1)).toBeNull();
+    expect(normalizePathData('M 1', 1, 1)).toBeNull();
+    expect(normalizePathData('H', 1, 1)).toBeNull();
+    expect(normalizePathData('V', 1, 1)).toBeNull();
+    expect(normalizePathData('Q 1 2', 1, 1)).toBeNull();
 
     const invalidPath = document.createElementNS(SVG_NAMESPACE, 'path');
     invalidPath.setAttribute('d', 'M 1');
     const transform: [number, number, number, number, number, number] = [1, 0, 0, 1, 0, -20_971_520];
-    expect(context.normalizeTranslatedElement(invalidPath, transform)).toBe(transform);
+    expect(normalizeTranslatedElement(invalidPath, transform)).toBe(transform);
     const pathWithoutData = document.createElementNS(SVG_NAMESPACE, 'path');
-    expect(context.normalizeTranslatedElement(pathWithoutData, transform)).toBe(transform);
+    expect(normalizeTranslatedElement(pathWithoutData, transform)).toBe(transform);
 
     const group = document.createElementNS(SVG_NAMESPACE, 'g');
-    expect(context.normalizeTranslatedElement(group, transform)).toBe(transform);
-    expect(contextType.normalizePathData({ match: () => [void 0] } as unknown as string, 1, 1)).toBeNull();
+    expect(normalizeTranslatedElement(group, transform)).toBe(transform);
+    expect(normalizePathData({ match: () => [void 0] } as unknown as string, 1, 1)).toBeNull();
   });
 
   it('implements path commands', () => {
@@ -444,8 +437,9 @@ describe('WebSvgRenderContext', () => {
   });
 
   it('covers measureText font-box branch and SVG image raster-warn optional path without platform', () => {
+    const getContext = jest.mocked(HTMLCanvasElement.prototype.getContext);
     const context = createContext();
-    const raster = (context as any).rasterContext;
+    const raster = getContext.mock.results.at(-1)!.value as CanvasRenderingContext2D;
     const originalMeasureText = raster.measureText.bind(raster);
     raster.measureText = jest.fn(() => ({
       width: 5,
@@ -455,7 +449,7 @@ describe('WebSvgRenderContext', () => {
       actualBoundingBoxDescent: 4,
       fontBoundingBoxAscent: 7,
       fontBoundingBoxDescent: 2,
-    }));
+    } as TextMetrics));
 
     const metrics = context.measureText('abc');
     expect(metrics.height).toBe(9);
@@ -469,7 +463,6 @@ describe('WebSvgRenderContext', () => {
   });
 
   it('covers image serialization and dimension fallback helpers', () => {
-    const context = createContext() as any;
 
     const img = document.createElement('img');
     Object.defineProperties(img, {
@@ -480,14 +473,14 @@ describe('WebSvgRenderContext', () => {
       naturalHeight: { value: 0 },
       height: { value: 17 },
     });
-    expect(context.imageHref(img)).toBe('fallback-src');
-    expect(context.imageWidth(img)).toBe(13);
-    expect(context.imageHeight(img)).toBe(17);
+    expect(imageHref(img)).toBe('fallback-src');
+    expect(imageWidth(img)).toBe(13);
+    expect(imageHeight(img)).toBe(17);
 
     const svgImg = document.createElementNS(SVG_NAMESPACE, 'image');
-    expect(context.imageHref(svgImg as unknown as CanvasImageSource)).toBe('');
-    expect(context.imageWidth(svgImg as unknown as CanvasImageSource)).toBe(0);
-    expect(context.imageHeight(svgImg as unknown as CanvasImageSource)).toBe(0);
+    expect(imageHref(svgImg as unknown as CanvasImageSource)).toBe('');
+    expect(imageWidth(svgImg as unknown as CanvasImageSource)).toBe(0);
+    expect(imageHeight(svgImg as unknown as CanvasImageSource)).toBe(0);
 
     const video = document.createElement('video');
     Object.defineProperties(video, {
@@ -497,12 +490,12 @@ describe('WebSvgRenderContext', () => {
       videoHeight: { value: 0 },
       height: { value: 23 },
     });
-    expect(context.imageWidth(video)).toBe(19);
-    expect(context.imageHeight(video)).toBe(23);
+    expect(imageWidth(video)).toBe(19);
+    expect(imageHeight(video)).toBe(23);
 
     const emptySvg = document.createElementNS(SVG_NAMESPACE, 'svg');
     emptySvg.setAttribute('width', 'NaN');
-    expect(context.readSvgDimension(emptySvg, 'width')).toBe(1);
+    expect(readSvgDimension(emptySvg, 'width')).toBe(1);
   });
 
   it('throws from putImageData when internal canvas context creation fails', () => {
@@ -524,19 +517,20 @@ describe('WebSvgRenderContext', () => {
   });
 
   it('disconnects registered resize observers when removing listeners', () => {
-    const context = createContext() as any;
+    const platform = new BrowserPlatform();
     const disconnect = jest.fn();
-    context.resizeListeners.set(jest.fn(), { disconnect });
-
+    jest.spyOn(platform, 'observeResize').mockReturnValue(disconnect);
+    const context = createContext(platform);
+    context.addResizeListener(jest.fn());
     context.removeResizeListener();
-
+    context.removeResizeListener();
     expect(disconnect).toHaveBeenCalledTimes(1);
-    expect(context.resizeListeners.size).toBe(0);
   });
 
   it('falls back to actual bounding boxes when font bounding boxes are unavailable', () => {
+    const getContext = jest.mocked(HTMLCanvasElement.prototype.getContext);
     const context = createContext();
-    const raster = (context as any).rasterContext;
+    const raster = getContext.mock.results.at(-1)!.value as CanvasRenderingContext2D;
     const originalMeasureText = raster.measureText.bind(raster);
     raster.measureText = jest.fn(() => ({
       width: 10,
@@ -546,7 +540,7 @@ describe('WebSvgRenderContext', () => {
       actualBoundingBoxDescent: 4,
       fontBoundingBoxAscent: void 0,
       fontBoundingBoxDescent: void 0,
-    }));
+    } as unknown as TextMetrics));
 
     const metrics = context.measureText('fallback');
     expect(metrics.height).toBe(7);
@@ -557,11 +551,10 @@ describe('WebSvgRenderContext', () => {
   });
 
   it('throws unsupported source errors in imageHref and imageHeight helpers', () => {
-    const context = createContext() as any;
     const unknownSource = {} as CanvasImageSource;
 
-    expect(() => context.imageHref(unknownSource)).toThrow('WebSvgRenderContext cannot serialize this CanvasImageSource.');
-    expect(() => context.imageHeight(unknownSource)).toThrow(
+    expect(() => imageHref(unknownSource)).toThrow('WebSvgRenderContext cannot serialize this CanvasImageSource.');
+    expect(() => imageHeight(unknownSource)).toThrow(
       'WebSvgRenderContext cannot read this CanvasImageSource height.',
     );
   });

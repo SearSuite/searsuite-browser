@@ -8,12 +8,12 @@ import { CursorToken } from '@searsuite/sear-render-cursor';
  */
 @Injectable()
 export class WebCursorEngine extends CursorEngine {
-  private hostElement: HTMLElement | SVGElement | null = null;
-  private lastToken: CursorToken = CursorToken.Default;
-  private overrideToken: CursorToken | null = null;
+  #hostElement: HTMLElement | SVGElement | null = null;
+  #lastToken: CursorToken = CursorToken.Default;
+  #overrideToken: CursorToken | null = null;
 
   /** Token → CSS cursor value map; extendable via registerToken(). */
-  private tokenMap = new Map<string, string>([
+  #tokenMap = new Map<string, string>([
     [CursorToken.Default, 'default'],
     [CursorToken.Cell, CURSOR_CELL],
     [CursorToken.Text, 'text'],
@@ -31,34 +31,34 @@ export class WebCursorEngine extends CursorEngine {
 
   /** Allow third parties to extend or override Token → CSS mapping. */
   registerToken(token: string, cssCursor: string): void {
-    this.tokenMap.set(token, cssCursor);
+    this.#tokenMap.set(token, cssCursor);
   }
 
   /** Attaches this adapter to its host surface. */
   mount(target: unknown): void {
-    this.hostElement = target as HTMLElement | SVGElement;
+    this.#hostElement = target as HTMLElement | SVGElement;
   }
 
   /** Applies a transaction to WebCursorEngine state. */
   apply(token: CursorToken): void {
-    const effective = this.overrideToken ?? token;
-    if (!this.hostElement || effective === this.lastToken) return;
-    this.hostElement.style.cursor = this.tokenMap.get(effective) ?? 'default';
-    this.lastToken = effective;
+    const effective = this.#overrideToken ?? token;
+    if (!this.#hostElement || effective === this.#lastToken) return;
+    this.#hostElement.style.cursor = this.#tokenMap.get(effective) ?? 'default';
+    this.#lastToken = effective;
   }
 
   /** Applies a temporary host cursor override. */
   override(token: CursorToken | null): void {
-    this.overrideToken = token;
+    this.#overrideToken = token;
     const effective = token ?? CursorToken.Default;
-    if (this.hostElement) this.hostElement.style.cursor = this.tokenMap.get(effective) ?? 'default';
-    this.lastToken = effective;
+    if (this.#hostElement) this.#hostElement.style.cursor = this.#tokenMap.get(effective) ?? 'default';
+    this.#lastToken = effective;
   }
 
   /** Detaches this adapter from its host surface. */
   unmount(): void {
-    if (this.hostElement) this.hostElement.style.cursor = '';
-    this.hostElement = null;
+    if (this.#hostElement) this.#hostElement.style.cursor = '';
+    this.#hostElement = null;
   }
 }
 

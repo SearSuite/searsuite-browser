@@ -183,16 +183,8 @@ describe('WebRenderContext', () => {
     context.removeMouseUpEventListener(dummy);
     expect(removeEventListenerSpy).toHaveBeenCalledWith('mouseup', dummy);
 
-    // test private clearCache decorator
-    const decorator = (context as any).clearCache();
-    const originalMethod = jest.fn();
-    const descriptor = { value: originalMethod };
-    const wrapped = decorator({}, 'testMethod', descriptor);
-
     context.rect(0, 0, 10, 10);
-    expect(context.cache.size).toBe(1);
-    wrapped.value();
+    context.beginPath();
     expect(context.cache.size).toBe(0);
-    expect(originalMethod).toHaveBeenCalled();
   });
 });

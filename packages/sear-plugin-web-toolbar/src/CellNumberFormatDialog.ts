@@ -187,7 +187,7 @@ export interface CellFormatDialogSections {
 
 /** Web number-format settings dialog with category-specific preset menus and custom Excel code input. */
 export class CellNumberFormatDialog {
-  private dialog: HTMLDialogElement | null = null;
+  #dialog: HTMLDialogElement | null = null;
 
   public open(options: {
     readonly currentFormat: CellFormat | null;
@@ -200,7 +200,7 @@ export class CellNumberFormatDialog {
     dialog.className = 'sear-number-format-dialog';
     dialog.setAttribute('aria-label', options.sections ? 'Format cells' : 'Number format');
     dialog.classList.toggle('is-full', !!options.sections);
-    this.dialog = dialog;
+    this.#dialog = dialog;
 
     const header = document.createElement('header');
     const title = document.createElement('h2');
@@ -392,8 +392,8 @@ export class CellNumberFormatDialog {
   }
 
   public destroy(): void {
-    const dialog = this.dialog;
-    this.dialog = null;
+    const dialog = this.#dialog;
+    this.#dialog = null;
     if (!dialog) return;
     if (dialog.open && typeof dialog.close === 'function') dialog.close();
     dialog.remove();

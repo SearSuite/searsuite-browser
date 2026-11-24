@@ -18,18 +18,18 @@ import { TextInputKind, type TextInputEvent, type TextInputHandlers } from '@sea
  */
 @Injectable()
 export class WebTextInput extends TextInput {
-  private hiddenInput: HTMLInputElement | null = null;
-  private isListening = false;
-  private isComposing = false;
-  private composingText = '';
-  private composingOffset = 0;
-  private readonly boundHandleCompositionStart: EventListener;
-  private readonly boundHandleCompositionUpdate: EventListener;
-  private readonly boundHandleComposingKeydown: EventListener;
-  private readonly boundCompositionEnd: EventListener;
-  private readonly boundHandleInput: EventListener;
-  private readonly boundHandlePaste: EventListener;
-  private readonly boundHandleCut: EventListener;
+  #hiddenInput: HTMLInputElement | null = null;
+  #isListening = false;
+  #isComposing = false;
+  #composingText = '';
+  #composingOffset = 0;
+  readonly #boundHandleCompositionStart: EventListener;
+  readonly #boundHandleCompositionUpdate: EventListener;
+  readonly #boundHandleComposingKeydown: EventListener;
+  readonly #boundCompositionEnd: EventListener;
+  readonly #boundHandleInput: EventListener;
+  readonly #boundHandlePaste: EventListener;
+  readonly #boundHandleCut: EventListener;
 
   // ─── Hooks wired by SheetCellEditorPlugin ─────────────────────────────────
   /** Handles the input lifecycle event. */
@@ -42,32 +42,32 @@ export class WebTextInput extends TextInput {
   /** Creates a WebTextInput instance. */
   constructor() {
     super();
-    this.boundHandleCompositionStart = this.handleCompositionStart.bind(this) as EventListener;
-    this.boundHandleCompositionUpdate = this.handleCompositionUpdate.bind(this) as EventListener;
-    this.boundHandleComposingKeydown = this.handleComposingKeydown.bind(this) as EventListener;
-    this.boundCompositionEnd = this.compositionEnd.bind(this) as EventListener;
-    this.boundHandleInput = this.handleInput.bind(this) as EventListener;
-    this.boundHandlePaste = this.handlePaste.bind(this) as EventListener;
-    this.boundHandleCut = this.handleCut.bind(this) as EventListener;
+    this.#boundHandleCompositionStart = this.#handleCompositionStart.bind(this) as EventListener;
+    this.#boundHandleCompositionUpdate = this.#handleCompositionUpdate.bind(this) as EventListener;
+    this.#boundHandleComposingKeydown = this.#handleComposingKeydown.bind(this) as EventListener;
+    this.#boundCompositionEnd = this.#compositionEnd.bind(this) as EventListener;
+    this.#boundHandleInput = this.#handleInput.bind(this) as EventListener;
+    this.#boundHandlePaste = this.#handlePaste.bind(this) as EventListener;
+    this.#boundHandleCut = this.#handleCut.bind(this) as EventListener;
   }
 
-  private createHiddenInput() {
-    this.hiddenInput = document.createElement('input');
-    this.hiddenInput.type = 'text';
-    this.hiddenInput.id = 'searTextInput';
-    this.hiddenInput.style.position = 'fixed';
-    this.hiddenInput.style.left = '0px';
-    this.hiddenInput.style.top = '0px';
-    this.hiddenInput.style.opacity = '0';
-    this.hiddenInput.style.pointerEvents = 'none';
-    this.hiddenInput.style.height = '30px';
-    this.hiddenInput.style.width = '200px';
-    this.hiddenInput.tabIndex = -1;
-    this.hiddenInput.autocomplete = 'off';
-    this.hiddenInput.autocapitalize = 'off';
-    this.hiddenInput.spellcheck = false;
+  #createHiddenInput() {
+    this.#hiddenInput = document.createElement('input');
+    this.#hiddenInput.type = 'text';
+    this.#hiddenInput.id = 'searTextInput';
+    this.#hiddenInput.style.position = 'fixed';
+    this.#hiddenInput.style.left = '0px';
+    this.#hiddenInput.style.top = '0px';
+    this.#hiddenInput.style.opacity = '0';
+    this.#hiddenInput.style.pointerEvents = 'none';
+    this.#hiddenInput.style.height = '30px';
+    this.#hiddenInput.style.width = '200px';
+    this.#hiddenInput.tabIndex = -1;
+    this.#hiddenInput.autocomplete = 'off';
+    this.#hiddenInput.autocapitalize = 'off';
+    this.#hiddenInput.spellcheck = false;
 
-    document.body.appendChild(this.hiddenInput);
+    document.body.appendChild(this.#hiddenInput);
   }
 
   /** @inheritdoc */
@@ -80,42 +80,42 @@ export class WebTextInput extends TextInput {
 
   /** @inheritdoc */
   public override startListener(): void {
-    if (this.isListening) {
-      this.focusHiddenInput();
+    if (this.#isListening) {
+      this.#focusHiddenInput();
       return;
     }
-    this.createHiddenInput();
-    this.isListening = true;
-    this.hiddenInput?.addEventListener('input', this.boundHandleInput);
-    this.hiddenInput?.addEventListener('paste', this.boundHandlePaste);
-    this.hiddenInput?.addEventListener('cut', this.boundHandleCut);
-    this.hiddenInput?.addEventListener('compositionstart', this.boundHandleCompositionStart);
-    this.hiddenInput?.addEventListener('compositionupdate', this.boundHandleCompositionUpdate);
-    this.hiddenInput?.addEventListener('compositionend', this.boundCompositionEnd);
-    this.hiddenInput?.addEventListener('keydown', this.boundHandleComposingKeydown);
-    this.focusHiddenInput();
+    this.#createHiddenInput();
+    this.#isListening = true;
+    this.#hiddenInput?.addEventListener('input', this.#boundHandleInput);
+    this.#hiddenInput?.addEventListener('paste', this.#boundHandlePaste);
+    this.#hiddenInput?.addEventListener('cut', this.#boundHandleCut);
+    this.#hiddenInput?.addEventListener('compositionstart', this.#boundHandleCompositionStart);
+    this.#hiddenInput?.addEventListener('compositionupdate', this.#boundHandleCompositionUpdate);
+    this.#hiddenInput?.addEventListener('compositionend', this.#boundCompositionEnd);
+    this.#hiddenInput?.addEventListener('keydown', this.#boundHandleComposingKeydown);
+    this.#focusHiddenInput();
   }
 
   /** @inheritdoc */
   public override stopListener(): void {
-    this.isListening = false;
-    this.hiddenInput?.removeEventListener('input', this.boundHandleInput);
-    this.hiddenInput?.removeEventListener('paste', this.boundHandlePaste);
-    this.hiddenInput?.removeEventListener('cut', this.boundHandleCut);
-    this.hiddenInput?.removeEventListener('compositionstart', this.boundHandleCompositionStart);
-    this.hiddenInput?.removeEventListener('compositionupdate', this.boundHandleCompositionUpdate);
-    this.hiddenInput?.removeEventListener('compositionend', this.boundCompositionEnd);
-    this.hiddenInput?.removeEventListener('keydown', this.boundHandleComposingKeydown);
-    this.hiddenInput?.remove();
-    this.hiddenInput = null;
-    this.isComposing = false;
-    this.composingText = '';
-    this.composingOffset = 0;
+    this.#isListening = false;
+    this.#hiddenInput?.removeEventListener('input', this.#boundHandleInput);
+    this.#hiddenInput?.removeEventListener('paste', this.#boundHandlePaste);
+    this.#hiddenInput?.removeEventListener('cut', this.#boundHandleCut);
+    this.#hiddenInput?.removeEventListener('compositionstart', this.#boundHandleCompositionStart);
+    this.#hiddenInput?.removeEventListener('compositionupdate', this.#boundHandleCompositionUpdate);
+    this.#hiddenInput?.removeEventListener('compositionend', this.#boundCompositionEnd);
+    this.#hiddenInput?.removeEventListener('keydown', this.#boundHandleComposingKeydown);
+    this.#hiddenInput?.remove();
+    this.#hiddenInput = null;
+    this.#isComposing = false;
+    this.#composingText = '';
+    this.#composingOffset = 0;
   }
 
   /** Restore focus to the hidden input (e.g. after a canvas click moves focus away). */
   public override refocus(): void {
-    this.focusHiddenInput();
+    this.#focusHiddenInput();
   }
 
   /**
@@ -123,34 +123,34 @@ export class WebTextInput extends TextInput {
    * IME candidate window is anchored near the cell being edited.
    */
   public override setPosition(x: number, y: number): void {
-    if (!this.hiddenInput) return;
-    this.hiddenInput.style.left = `${x}px`;
-    this.hiddenInput.style.top = `${y}px`;
+    if (!this.#hiddenInput) return;
+    this.#hiddenInput.style.left = `${x}px`;
+    this.#hiddenInput.style.top = `${y}px`;
   }
 
-  private focusHiddenInput(): void {
-    if (!this.hiddenInput) return;
+  #focusHiddenInput(): void {
+    if (!this.#hiddenInput) return;
     // Focusing an off-screen editor input can make the browser scroll the
     // document; the sheet scroll manager owns viewport movement instead.
-    this.hiddenInput.focus({ preventScroll: true });
+    this.#hiddenInput.focus({ preventScroll: true });
   }
 
   // ── Event handlers ────────────────────────────────────────────────────────
 
-  private handleCompositionStart(_event: CompositionEvent): void {
-    this.isComposing = true;
-    this.composingText = '';
-    this.composingOffset = 0;
+  #handleCompositionStart(_event: CompositionEvent): void {
+    this.#isComposing = true;
+    this.#composingText = '';
+    this.#composingOffset = 0;
   }
 
-  private handleCompositionUpdate(event: CompositionEvent): void {
+  #handleCompositionUpdate(event: CompositionEvent): void {
     const text = event.data ?? '';
-    if (text === this.composingText) return;
-    this.composingText = text;
+    if (text === this.#composingText) return;
+    this.#composingText = text;
     // After new text arrives, the caret is always at the end; selectionStart is
     // unreliable in some IMEs and may return 0.
-    this.composingOffset = text.length;
-    this.onTextInput?.({ kind: TextInputKind.CompositionUpdate, text, caretOffset: this.composingOffset });
+    this.#composingOffset = text.length;
+    this.onTextInput?.({ kind: TextInputKind.CompositionUpdate, text, caretOffset: this.#composingOffset });
   }
 
   /**
@@ -160,18 +160,18 @@ export class WebTextInput extends TextInput {
    * sync. Otherwise delete would remove text from the IME end while the editor
    * removes text from the middle.
    */
-  private handleComposingKeydown(event: KeyboardEvent): void {
-    if (!this.isComposing) return;
+  #handleComposingKeydown(event: KeyboardEvent): void {
+    if (!this.#isComposing) return;
 
-    const len = this.composingText.length;
-    let newOffset = this.composingOffset;
+    const len = this.#composingText.length;
+    let newOffset = this.#composingOffset;
 
     switch (event.key) {
       case KeyboardKey.ArrowLeft:
-        newOffset = Math.max(0, this.composingOffset - 1);
+        newOffset = Math.max(0, this.#composingOffset - 1);
         break;
       case KeyboardKey.ArrowRight:
-        newOffset = Math.min(len, this.composingOffset + 1);
+        newOffset = Math.min(len, this.#composingOffset + 1);
         break;
       case KeyboardKey.Home:
         newOffset = 0;
@@ -183,39 +183,39 @@ export class WebTextInput extends TextInput {
         return;
     }
 
-    if (newOffset !== this.composingOffset) {
-      this.composingOffset = newOffset;
-      this.onTextInput?.({ kind: TextInputKind.CompositionUpdate, text: this.composingText, caretOffset: newOffset });
+    if (newOffset !== this.#composingOffset) {
+      this.#composingOffset = newOffset;
+      this.onTextInput?.({ kind: TextInputKind.CompositionUpdate, text: this.#composingText, caretOffset: newOffset });
       // Do not call preventDefault(); let the event reach the IME so it can move its internal caret.
     }
   }
 
-  private compositionEnd(event: CompositionEvent): void {
-    this.isComposing = false;
-    this.composingText = '';
-    this.composingOffset = 0;
+  #compositionEnd(event: CompositionEvent): void {
+    this.#isComposing = false;
+    this.#composingText = '';
+    this.#composingOffset = 0;
     const text = event.data;
-    if (this.hiddenInput) this.hiddenInput.value = '';
+    if (this.#hiddenInput) this.#hiddenInput.value = '';
     this.onTextInput?.({ kind: TextInputKind.CompositionUpdate, text: '', caretOffset: 0 });
     if (text) this.onTextInput?.({ kind: TextInputKind.Text, text });
     event.stopPropagation();
   }
 
-  private handleInput(event: Event): void {
-    if (this.isComposing) return;
-    const text = this.hiddenInput?.value ?? '';
-    if (this.hiddenInput) this.hiddenInput.value = '';
+  #handleInput(event: Event): void {
+    if (this.#isComposing) return;
+    const text = this.#hiddenInput?.value ?? '';
+    if (this.#hiddenInput) this.#hiddenInput.value = '';
     if (text) this.onTextInput?.({ kind: TextInputKind.Text, text });
     event.stopPropagation();
   }
 
-  private handlePaste(event: ClipboardEvent): void {
+  #handlePaste(event: ClipboardEvent): void {
     const text = event.clipboardData?.getData('text') || '';
     if (text && !this.onPaste?.(text)) this.onTextInput?.({ kind: TextInputKind.Text, text });
     event.preventDefault();
   }
 
-  private handleCut(event: ClipboardEvent): void {
+  #handleCut(event: ClipboardEvent): void {
     const selectedText = this.onCut?.();
     if (selectedText === undefined || selectedText) {
       if (selectedText) event.clipboardData?.setData('text/plain', selectedText);

@@ -5,15 +5,18 @@ import { Injectable, Inject } from '@searsuite/sear-foundation-di';
 /** Web file-save adapter; native elements and object URLs never enter the neutral contract. */
 @Injectable()
 export class WebFileDownload extends FileDownload {
-  private readonly pending = new Map<string, number>();
-  private destroyed = false;
+  readonly #platform: Platform;
+
+  readonly #pending = new Map<string, number>();
+  #destroyed = false;
   /** Receives the owning host's timer adapter explicitly. */
-  constructor(@Inject(Platform.symbol) private readonly platform: Platform) {
+  constructor(@Inject(Platform.symbol) platform: Platform) {
     super();
+    this.#platform = platform;
   }
   /** Initiates a native file save and tracks its delayed resource release. */
   public download(request: FileDownloadRequest): void {
-    if (this.destroyed) throw new SearError('File download adapter has been destroyed.');
+    if (this.#destroyed) throw new SearError('File download adapter has been destroyed.');
     let url: string | undefined;
     let link: HTMLAnchorElement | undefined;
     try {
@@ -25,10 +28,10 @@ export class WebFileDownload extends FileDownload {
       link.download = request.name;
       document.body.append(link);
       link.click();
-      const timer = this.platform.setTimeout(() => {
-        if (this.pending.delete(objectUrl)) URL.revokeObjectURL(objectUrl);
+      const timer = this.#platform.setTimeout(() => {
+        if (this.#pending.delete(objectUrl)) URL.revokeObjectURL(objectUrl);
       }, 0);
-      this.pending.set(objectUrl, timer);
+      this.#pending.set(objectUrl, timer);
     } catch (cause) {
       if (url !== undefined) URL.revokeObjectURL(url);
       throw new SearError('File download failed.', { cause });
@@ -38,12 +41,12 @@ export class WebFileDownload extends FileDownload {
   }
   /** Cancels pending release callbacks and revokes every retained object URL. */
   public destroy(): void {
-    if (this.destroyed) return;
-    this.destroyed = true;
-    for (const [url, timer] of this.pending) {
-      this.platform.clearTimeout(timer);
+    if (this.#destroyed) return;
+    this.#destroyed = true;
+    for (const [url, timer] of this.#pending) {
+      this.#platform.clearTimeout(timer);
       URL.revokeObjectURL(url);
     }
-    this.pending.clear();
+    this.#pending.clear();
   }
 }

@@ -60,157 +60,160 @@ export interface SearWebBottomBarMountOptions {
 /** Browser DOM implementation of the bottom sheet tab/status bar. */
 @Injectable()
 export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWebBottomBarMountOptions> {
+  readonly #platform: Platform;
+
   /** DI token for resolving the browser bottom bar adapter. */
   public static readonly symbol = Symbol.for('SearWebBottomBar');
 
-  private container: HTMLElement | null = null;
-  private root: HTMLElement | null = null;
-  private styleElement: HTMLStyleElement | null = null;
-  private cssInjected = false;
-  private options: SearWebBottomBarMountOptions = {};
-  private tabBar: SheetTabBarAdapter<HTMLElement> = new WebSheetTabBar();
-  private statusBar: SheetStatusBarAdapter<HTMLElement> = new WebSheetStatusBar();
-  private unsubscribeWorkbookState: (() => void) | null = null;
-  private unsubscribeActiveSheet: (() => void) | null = null;
-  private unsubscribeZoom: (() => void) | null = null;
-  private unsubscribeSheetCommands: (() => void) | null = null;
-  private keyTarget: Window | null = null;
-  private readonly boundHandleKeyDown = this.handleKeyDown.bind(this);
+  #container: HTMLElement | null = null;
+  #root: HTMLElement | null = null;
+  #styleElement: HTMLStyleElement | null = null;
+  #cssInjected = false;
+  #options: SearWebBottomBarMountOptions = {};
+  #tabBar: SheetTabBarAdapter<HTMLElement> = new WebSheetTabBar();
+  #statusBar: SheetStatusBarAdapter<HTMLElement> = new WebSheetStatusBar();
+  #unsubscribeWorkbookState: (() => void) | null = null;
+  #unsubscribeActiveSheet: (() => void) | null = null;
+  #unsubscribeZoom: (() => void) | null = null;
+  #unsubscribeSheetCommands: (() => void) | null = null;
+  #keyTarget: Window | null = null;
+  readonly #boundHandleKeyDown = this.#handleKeyDown.bind(this);
 
   /** Constructs a bottom bar adapter bound to one platform. */
-  constructor(@Inject(Platform.symbol) private readonly platform: Platform) {
+  constructor(@Inject(Platform.symbol) platform: Platform) {
     super();
+    this.#platform = platform;
   }
 
   public mount(target: HTMLElement, options: SearWebBottomBarMountOptions = {}): void {
-    const focusedSheetId = this.getFocusedSheetId();
-    this.unbindKeyboard();
-    this.tabBar.destroy();
-    this.statusBar.destroy();
-    this.container = target as HTMLElement;
-    this.options = options;
-    this.tabBar = options.tabBar ?? new WebSheetTabBar();
-    this.statusBar = options.statusBar ?? new WebSheetStatusBar();
-    this.injectCSS();
-    this.bindWorkbookObservations();
+    const focusedSheetId = this.#getFocusedSheetId();
+    this.#unbindKeyboard();
+    this.#tabBar.destroy();
+    this.#statusBar.destroy();
+    this.#container = target as HTMLElement;
+    this.#options = options;
+    this.#tabBar = options.tabBar ?? new WebSheetTabBar();
+    this.#statusBar = options.statusBar ?? new WebSheetStatusBar();
+    this.#injectCSS();
+    this.#bindWorkbookObservations();
     if (options.workbook) {
-      this.keyTarget = target.ownerDocument.defaultView;
-      this.keyTarget?.addEventListener('keydown', this.boundHandleKeyDown, true);
+      this.#keyTarget = target.ownerDocument.defaultView;
+      this.#keyTarget?.addEventListener('keydown', this.#boundHandleKeyDown, true);
     }
-    if (!options.workbook) this.render();
-    this.focusSheetTab(focusedSheetId);
+    if (!options.workbook) this.#render();
+    this.#focusSheetTab(focusedSheetId);
   }
 
   public destroy(): void {
-    this.unbindKeyboard();
-    this.unbindWorkbookObservations();
-    this.tabBar.destroy();
-    this.statusBar.destroy();
-    if (this.root?.parentNode) {
-      this.root.parentNode.removeChild(this.root);
+    this.#unbindKeyboard();
+    this.#unbindWorkbookObservations();
+    this.#tabBar.destroy();
+    this.#statusBar.destroy();
+    if (this.#root?.parentNode) {
+      this.#root.parentNode.removeChild(this.#root);
     }
-    if (this.styleElement?.parentNode) {
-      this.styleElement.parentNode.removeChild(this.styleElement);
+    if (this.#styleElement?.parentNode) {
+      this.#styleElement.parentNode.removeChild(this.#styleElement);
     }
-    this.root = null;
-    this.container = null;
-    this.styleElement = null;
-    this.cssInjected = false;
-    this.options = {};
-    this.tabBar = new WebSheetTabBar();
-    this.statusBar = new WebSheetStatusBar();
+    this.#root = null;
+    this.#container = null;
+    this.#styleElement = null;
+    this.#cssInjected = false;
+    this.#options = {};
+    this.#tabBar = new WebSheetTabBar();
+    this.#statusBar = new WebSheetStatusBar();
   }
 
-  private render(): void {
-    if (!this.container) return;
-    const focusedSheetId = this.getFocusedSheetId();
-    this.tabBar.destroy();
-    this.statusBar.destroy();
-    if (this.root?.parentNode) {
-      this.root.parentNode.removeChild(this.root);
+  #render(): void {
+    if (!this.#container) return;
+    const focusedSheetId = this.#getFocusedSheetId();
+    this.#tabBar.destroy();
+    this.#statusBar.destroy();
+    if (this.#root?.parentNode) {
+      this.#root.parentNode.removeChild(this.#root);
     }
 
     const root = document.createElement('div');
     root.className = 'sear-sheet-bottom-bar';
-    this.container.appendChild(root);
-    this.root = root;
+    this.#container.appendChild(root);
+    this.#root = root;
 
-    this.tabBar.mount(root, this.createTabBarModel());
-    this.statusBar.mount(root, this.createStatusBarModel());
-    this.focusSheetTab(focusedSheetId);
+    this.#tabBar.mount(root, this.#createTabBarModel());
+    this.#statusBar.mount(root, this.#createStatusBarModel());
+    this.#focusSheetTab(focusedSheetId);
   }
 
-  private getFocusedSheetId(): string | undefined {
-    if (!this.container || !this.root) return undefined;
-    const focused = this.container.ownerDocument.activeElement;
-    return focused && this.root.contains(focused) ? (focused as HTMLElement).dataset['sheetId'] : undefined;
+  #getFocusedSheetId(): string | undefined {
+    if (!this.#container || !this.#root) return undefined;
+    const focused = this.#container.ownerDocument.activeElement;
+    return focused && this.#root.contains(focused) ? (focused as HTMLElement).dataset['sheetId'] : undefined;
   }
 
-  private focusSheetTab(sheetId: string | undefined): void {
-    if (!sheetId || !this.root) return;
-    Array.from(this.root.querySelectorAll<HTMLButtonElement>('[data-sheet-id]'))
+  #focusSheetTab(sheetId: string | undefined): void {
+    if (!sheetId || !this.#root) return;
+    Array.from(this.#root.querySelectorAll<HTMLButtonElement>('[data-sheet-id]'))
       .find((tab) => tab.dataset['sheetId'] === sheetId)
       ?.focus();
   }
 
   /** Observes workbook state directly so every state producer keeps the tabs in sync. */
-  private bindWorkbookObservations(): void {
-    this.unbindWorkbookObservations();
-    const workbook = this.options.workbook?.editor;
+  #bindWorkbookObservations(): void {
+    this.#unbindWorkbookObservations();
+    const workbook = this.#options.workbook?.editor;
     if (!workbook) return;
-    this.unsubscribeWorkbookState = workbook.observations.subscribe(WorkbookDocumentStateObservation, () =>
-      this.render(),
+    this.#unsubscribeWorkbookState = workbook.observations.subscribe(WorkbookDocumentStateObservation, () =>
+      this.#render(),
     );
-    this.unsubscribeActiveSheet = workbook.observations.subscribe(WorkbookActiveSheetEditorObservation, () => {
-      this.bindZoomObservation();
-      this.bindSheetStatusUpdates();
-      this.render();
+    this.#unsubscribeActiveSheet = workbook.observations.subscribe(WorkbookActiveSheetEditorObservation, () => {
+      this.#bindZoomObservation();
+      this.#bindSheetStatusUpdates();
+      this.#render();
     });
-    this.bindZoomObservation();
-    this.bindSheetStatusUpdates();
+    this.#bindZoomObservation();
+    this.#bindSheetStatusUpdates();
   }
 
-  private bindSheetStatusUpdates(): void {
-    this.unsubscribeSheetCommands?.();
-    this.unsubscribeSheetCommands = null;
-    const editor = this.options.workbook?.editor.sheets.getActiveEditor();
-    if (!editor || this.options.statusText !== undefined) return;
-    this.unsubscribeSheetCommands = editor.commands.subscribe((event) => {
+  #bindSheetStatusUpdates(): void {
+    this.#unsubscribeSheetCommands?.();
+    this.#unsubscribeSheetCommands = null;
+    const editor = this.#options.workbook?.editor.sheets.getActiveEditor();
+    if (!editor || this.#options.statusText !== undefined) return;
+    this.#unsubscribeSheetCommands = editor.commands.subscribe((event) => {
       if (event.phase !== CommandExecutionPhase.Completed) return;
-      const status = this.root?.querySelector('.sear-sheet-bottom-bar__status');
-      if (status) status.textContent = this.getSelectionStatusText();
+      const status = this.#root?.querySelector('.sear-sheet-bottom-bar__status');
+      if (status) status.textContent = this.#getSelectionStatusText();
     });
   }
 
-  private bindZoomObservation(): void {
-    this.unsubscribeZoom?.();
-    this.unsubscribeZoom = null;
-    const editor = this.options.workbook?.editor.sheets.getActiveEditor();
+  #bindZoomObservation(): void {
+    this.#unsubscribeZoom?.();
+    this.#unsubscribeZoom = null;
+    const editor = this.#options.workbook?.editor.sheets.getActiveEditor();
     if (!editor?.queries.has(ReadSheetZoomQuery)) return;
-    this.unsubscribeZoom = editor.observations.subscribe(SheetZoomObservation, (scale) => {
-      const label = this.root?.querySelector('.sear-sheet-bottom-bar__zoom-value');
+    this.#unsubscribeZoom = editor.observations.subscribe(SheetZoomObservation, (scale) => {
+      const label = this.#root?.querySelector('.sear-sheet-bottom-bar__zoom-value');
       if (label) label.textContent = `${Math.round(scale * 100)}%`;
     });
   }
 
-  private unbindWorkbookObservations(): void {
-    this.unsubscribeSheetCommands?.();
-    this.unsubscribeSheetCommands = null;
-    this.unsubscribeZoom?.();
-    this.unsubscribeZoom = null;
-    this.unsubscribeWorkbookState?.();
-    this.unsubscribeWorkbookState = null;
-    this.unsubscribeActiveSheet?.();
-    this.unsubscribeActiveSheet = null;
+  #unbindWorkbookObservations(): void {
+    this.#unsubscribeSheetCommands?.();
+    this.#unsubscribeSheetCommands = null;
+    this.#unsubscribeZoom?.();
+    this.#unsubscribeZoom = null;
+    this.#unsubscribeWorkbookState?.();
+    this.#unsubscribeWorkbookState = null;
+    this.#unsubscribeActiveSheet?.();
+    this.#unsubscribeActiveSheet = null;
   }
 
-  private unbindKeyboard(): void {
-    this.keyTarget?.removeEventListener('keydown', this.boundHandleKeyDown, true);
-    this.keyTarget = null;
+  #unbindKeyboard(): void {
+    this.#keyTarget?.removeEventListener('keydown', this.#boundHandleKeyDown, true);
+    this.#keyTarget = null;
   }
 
-  private handleKeyDown(event: KeyboardEvent): void {
-    const binding = this.options.workbook;
+  #handleKeyDown(event: KeyboardEvent): void {
+    const binding = this.#options.workbook;
     const workbook = binding?.editor;
     if (!binding || !workbook || event.defaultPrevented || event.isComposing) return;
     const activeEditor = workbook.sheets.getActiveEditor();
@@ -220,7 +223,7 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     if (event.key === 'F11' && event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
       event.stopPropagation();
-      this.addWorkbookSheet(binding);
+      this.#addWorkbookSheet(binding);
       return;
     }
     if (event.shiftKey || event.metaKey) return;
@@ -246,18 +249,18 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     if (index < 0) return;
     const next = sheets[index + direction];
     if (next) {
-      this.activateWorkbookSheet(workbook, next.id);
-      this.container?.ownerDocument.querySelector<HTMLElement>('[role="grid"]')?.focus();
+      this.#activateWorkbookSheet(workbook, next.id);
+      this.#container?.ownerDocument.querySelector<HTMLElement>('[role="grid"]')?.focus();
     }
   }
 
-  private createTabBarModel(): SheetTabBarModel {
-    const binding = this.options.workbook;
+  #createTabBarModel(): SheetTabBarModel {
+    const binding = this.#options.workbook;
     if (!binding) {
       return {
         sheets: [{ id: 'sheet-1', name: 'Sheet1', active: true }],
-        onAddSheetClick: () => this.showToast('Not implemented yet'),
-        onActivateSheetClick: () => this.showToast('Not implemented yet'),
+        onAddSheetClick: () => this.#showToast('Not implemented yet'),
+        onActivateSheetClick: () => this.#showToast('Not implemented yet'),
       };
     }
 
@@ -272,8 +275,8 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
           active: sheet.id === workbook.sheets.getActiveId(),
           ...(sheet.color ? { color: sheet.color } : {}),
         })),
-      onAddSheetClick: () => this.addWorkbookSheet(binding),
-      onActivateSheetClick: (sheetId) => this.activateWorkbookSheet(workbook, sheetId),
+      onAddSheetClick: () => this.#addWorkbookSheet(binding),
+      onActivateSheetClick: (sheetId) => this.#activateWorkbookSheet(workbook, sheetId),
       onRenameSheet: (sheetId, name) => {
         const trimmed = name.trim();
         if (state.sheets.find((sheet) => sheet.id === sheetId)?.name === trimmed) return null;
@@ -301,28 +304,28 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     };
   }
 
-  private createStatusBarModel(): SheetStatusBarModel {
-    const editor = this.options.workbook?.editor.sheets.getActiveEditor();
+  #createStatusBarModel(): SheetStatusBarModel {
+    const editor = this.#options.workbook?.editor.sheets.getActiveEditor();
     const zoomEnabled = Boolean(editor?.queries.has(ReadSheetZoomQuery) && editor.commands.has(SetSheetZoomCommand));
     const scale = zoomEnabled ? editor!.queries.run(ReadSheetZoomQuery, undefined) : 1;
     return {
-      statusText: this.options.statusText ?? this.getSelectionStatusText(),
-      zoomText: zoomEnabled ? `${Math.round(scale * 100)}%` : this.options.zoomText ?? '100%',
+      statusText: this.#options.statusText ?? this.#getSelectionStatusText(),
+      zoomText: zoomEnabled ? `${Math.round(scale * 100)}%` : this.#options.zoomText ?? '100%',
       zoomEnabled,
-      onZoomOutClick: () => this.changeZoom(-0.1),
-      onZoomInClick: () => this.changeZoom(0.1),
+      onZoomOutClick: () => this.#changeZoom(-0.1),
+      onZoomInClick: () => this.#changeZoom(0.1),
     };
   }
 
-  private changeZoom(step: number): void {
-    const editor = this.options.workbook?.editor.sheets.getActiveEditor();
+  #changeZoom(step: number): void {
+    const editor = this.#options.workbook?.editor.sheets.getActiveEditor();
     if (!editor?.queries.has(ReadSheetZoomQuery) || !editor.commands.has(SetSheetZoomCommand)) return;
     editor.commands.run(SetSheetZoomCommand, editor.queries.run(ReadSheetZoomQuery, undefined) + step);
   }
 
-  private addWorkbookSheet(binding: SearWebBottomBarWorkbookBinding): void {
+  #addWorkbookSheet(binding: SearWebBottomBarWorkbookBinding): void {
     if (!binding.createSheetState) {
-      this.showToast('Add sheet needs a createSheetState callback');
+      this.#showToast('Add sheet needs a createSheetState callback');
       return;
     }
     const workbook = binding.editor;
@@ -347,25 +350,25 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     if (sheetEditor.commands.has(SelectRangeCommand)) {
       sheetEditor.commands.run(SelectRangeCommand, { anchor: [0, 0], focus: [0, 0] });
     }
-    this.container?.ownerDocument.querySelector<HTMLElement>('[role="grid"]')?.focus();
+    this.#container?.ownerDocument.querySelector<HTMLElement>('[role="grid"]')?.focus();
   }
 
-  private activateWorkbookSheet(workbook: WorkbookEditor, sheetId: string): void {
+  #activateWorkbookSheet(workbook: WorkbookEditor, sheetId: string): void {
     if (sheetId === workbook.sheets.getActiveId()) return;
     workbook.commands.run(ActivateWorkbookSheetCommand, { sheetId });
   }
 
-  private injectCSS(): void {
-    if (this.cssInjected) return;
+  #injectCSS(): void {
+    if (this.#cssInjected) return;
     const style = document.createElement('style');
     style.setAttribute('data-sear-sheet-bottom-bar', '');
     style.textContent = SHEET_BOTTOM_BAR_CSS;
     document.head.appendChild(style);
-    this.styleElement = style;
-    this.cssInjected = true;
+    this.#styleElement = style;
+    this.#cssInjected = true;
   }
 
-  private showToast(message: string): void {
+  #showToast(message: string): void {
     const existing = document.querySelector('.sear-sheet-bottom-bar__toast');
     if (existing) existing.remove();
 
@@ -374,14 +377,14 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    this.platform.setTimeout(function removeSheetBottomBarToast() {
+    this.#platform.setTimeout(function removeSheetBottomBarToast() {
       if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 2000);
   }
 
-  private getSelectionStatusText(): string {
-    const editor = this.options.workbook?.editor.sheets.getActiveEditor();
-    if (!editor) return this.options.workbook ? '' : 'Sum=5994 Average=2997 Count=2';
+  #getSelectionStatusText(): string {
+    const editor = this.#options.workbook?.editor.sheets.getActiveEditor();
+    if (!editor) return this.#options.workbook ? '' : 'Sum=5994 Average=2997 Count=2';
     if (!editor.queries.has(GetSelection) || !editor.queries.has(ReadSheetCellDataQuery)) return '';
     const selection = editor.queries.run(GetSelection, undefined);
     const cells = editor.queries.run(ReadSheetCellDataQuery, undefined);

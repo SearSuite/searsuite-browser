@@ -10,8 +10,8 @@ const WEB_SHEET_CLIPBOARD_MIME_TYPE = `web ${SHEET_CLIPBOARD_MIME_TYPE}`;
 /** Browser Clipboard API adapter; DOM events never cross this boundary. */
 @Injectable()
 export class WebSheetClipboard extends SheetClipboard {
-  private lastWritten: SheetClipboardPayload | null = null;
-  private pendingWrite: Promise<void> = Promise.resolve();
+  #lastWritten: SheetClipboardPayload | null = null;
+  #pendingWrite: Promise<void> = Promise.resolve();
 
   public async read(): Promise<SheetClipboardPayload | null> {
     const clipboard = globalThis.navigator?.clipboard;
@@ -42,20 +42,20 @@ export class WebSheetClipboard extends SheetClipboard {
     }
     const plainText = await clipboard.readText();
     if (!plainText.length) return null;
-    return this.lastWritten?.plainText === plainText ? this.lastWritten : { plainText };
+    return this.#lastWritten?.plainText === plainText ? this.#lastWritten : { plainText };
   }
 
   public write(payload: SheetClipboardPayload): Promise<void> {
-    const write = this.pendingWrite.then(() => this.writePayload(payload));
-    this.pendingWrite = write.catch(() => {});
+    const write = this.#pendingWrite.then(() => this.#writePayload(payload));
+    this.#pendingWrite = write.catch(() => {});
     return write;
   }
 
-  private async writePayload(payload: SheetClipboardPayload): Promise<void> {
+  async #writePayload(payload: SheetClipboardPayload): Promise<void> {
     const clipboard = globalThis.navigator?.clipboard;
     if (!clipboard) return;
     await clipboard.writeText(payload.plainText);
-    this.lastWritten = payload;
+    this.#lastWritten = payload;
     if (!payload.structured) return;
     const extendedClipboard = clipboard as Clipboard & { write?: (items: ClipboardItems) => Promise<void> };
     if (extendedClipboard.write && globalThis.ClipboardItem) {
