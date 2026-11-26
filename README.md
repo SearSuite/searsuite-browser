@@ -2,6 +2,16 @@
 
 Browser implementations of the platform-neutral SearSuite contracts. Keep this repository beside `searsuite` when developing locally.
 
+## Use the npm release
+
+All four Browser packages have `0.0.1` available on npm. Application users can follow the [npm Quickstart](https://searsuite.com/docs/quickstart/) without checking out the source workspaces.
+
+The [standalone npm examples](examples/npm/README.md) provide Sheet, Workbook and Node.js Headless entries with a registry lockfile. Copy `examples/npm` to an application directory, run `npm ci`, then `npm run dev`. Open `/` for Workbook or `/sheet.html` for one Sheet. Run `npm run headless` for Node.
+
+The examples' `src/browser-host.ts` defines an application-owned `createBrowserAdapters(canvas)` helper. It reuses published adapters and keeps environment wiring out of the editor entries; it is not a new package export. Each entry shows toolbar ownership and teardown. The [Quickstart](https://searsuite.com/docs/quickstart/#browser-adapters) embeds the same files.
+
+Maintainers can run `pnpm run check:examples:npm` here to install and verify the examples in a fresh temporary consumer, using only npm archives. This check does not build or link sibling source packages.
+
 ## Packages
 
 - `sear-browser-adapters` implements browser timing and view geometry, native Fetch and XML/XPath, file download, user interaction, WebSocket transport, Canvas/SVG/WebGL rendering, pointer and keyboard input, text shaping, cursor, events, and scrolling.
@@ -38,7 +48,7 @@ pnpm build
 pnpm test
 ```
 
-The sibling `searsuite-example` repository uses these packages in its browser hosts.
+The [standalone npm examples](examples/npm/README.md) show how applications assemble these packages into browser hosts.
 
 ## Repository
 

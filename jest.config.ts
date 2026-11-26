@@ -10,4 +10,6 @@ export default {
   },
   preset: 'ts-jest',
   setupFiles: ['jest-canvas-mock'],
+  // Registry-consumer checks use Node's test runner in their isolated application.
+  testPathIgnorePatterns: ['<rootDir>/examples/'],
 };

@@ -1,0 +1,30 @@
+{
+  "name": "searsuite-npm-quickstart",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "headless": "node headless.mjs",
+    "test": "node --test smoke.test.mjs"
+  },
+  "dependencies": {
+    "@searsuite/sear-assembly-headless": "0.0.1",
+    "@searsuite/sear-assembly-setup": "0.0.1",
+    "@searsuite/sear-assembly-workbook": "0.0.1",
+    "@searsuite/sear-browser-adapters": "0.0.1",
+    "@searsuite/sear-domain-workbook": "0.0.1",
+    "@searsuite/sear-plugin-formula": "0.0.1",
+    "@searsuite/sear-plugin-sheet-doc-adapter": "0.0.1",
+    "@searsuite/sear-plugin-web-sheet-tabbar": "0.0.1",
+    "@searsuite/sear-plugin-web-toolbar": "0.0.1",
+    "@searsuite/sear-render-scroll": "0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^6.4.3"
+  }
+}
