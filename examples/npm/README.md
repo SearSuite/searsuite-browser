@@ -1,6 +1,6 @@
 # SearSuite npm examples
 
-Run a Sheet, a multi-Sheet Workbook and a Node.js Headless editor using the published `0.0.1` packages. This directory is a standalone npm application: it has its own lockfile, no workspace dependencies, no source aliases and no library patches. Node.js 22.12 or later is required.
+Run a Sheet, a multi-Sheet Workbook and a Node.js Headless editor using registry packages. This directory is a standalone npm application with no workspace dependencies, source aliases or library patches. Node.js 22.12 or later is required.
 
 ## Run
 
@@ -9,7 +9,7 @@ Copy this directory anywhere outside the source workspaces, or download it from 
 ```sh
 npx degit SearSuite/searsuite-browser/examples/npm my-searsuite-app
 cd my-searsuite-app
-npm ci
+npm install
 npm run dev
 ```
 
@@ -59,10 +59,10 @@ These browser pages keep changes in memory; reloading resets the seed data. `Exp
 
 Registering `WebSocketTransport` only supplies a client adapter. These examples do not connect to a collaboration service. HTTP-backed formula services also require host-managed data loading; no network-backed formula provider is configured here.
 
-The `0.0.1` default assembly can log duplicate plugin-depth and startup command-boundary warnings. These are known diagnostics from the published release, not additional setup steps; the examples preserve them. Report unexpected exceptions or incorrect results with your installed versions and reproduction steps. The examples intentionally pin a tested release set; source checkout changes are not automatically available on npm.
+This example follows the current source API, including the independent state and Workbook kernel packages. Those changes require a new npm release; the previously published `0.0.1` set does not provide this API. Run the registry check after publishing the updated package set.
 
 ## Maintaining the examples
 
-From the Browser repository root, run `pnpm run check:examples:npm`. It copies this directory to a fresh temporary location, installs the registry lockfile, checks SearSuite package origins, compiles all browser entries and runs the Node checks. It never builds or links sibling packages. Add `--keep` when invoking `node scripts/check-npm-examples.mjs` to retain the independent consumer for browser review.
+From the Browser repository root, run `pnpm run check:examples:npm`. It copies this directory to a fresh temporary location, installs current registry releases and records their lockfile, checks SearSuite package origins, compiles all browser entries and runs the Node checks. It never builds or links sibling packages. Add `--keep` when invoking `node scripts/check-npm-examples.mjs` to retain the independent consumer for browser review.
 
 The Website Quickstart embeds these source files using `data-example` code blocks. Run `pnpm --dir ../searsuite-website generate:quickstart` after editing an example and review the updated Website template. The [online Quickstart](https://searsuite.com/docs/quickstart/) also describes how to create the application manually.

@@ -3,7 +3,7 @@ import { type IFormulaParser } from '@searsuite/sear-domain-formula-engine';
 import { FormulaParser } from '@searsuite/sear-domain-formula-engine-ts';
 import { WebControlEventScope } from './WebControlEventScope';
 import { SheetCommandBus, SheetQueryRegistry } from '@searsuite/sear-assembly-commands';
-import { ReadSheetCellDataQuery } from '@searsuite/sear-render-engine';
+import { ReadSheetCellDataQuery } from '@searsuite/sear-domain-sheet';
 import {
   ClearDataValidationRulesCommand,
   DataValidationDropdownMode,
@@ -82,7 +82,7 @@ export class WebDataValidationDialog {
     platform: Platform,
     getSelections: () => Selection[] = () => [this.#getSelection()].filter((range): range is Selection => !!range),
     canEvaluateKind: (kind: DataValidationKind) => boolean = () => true,
-    formulaParser: Pick<IFormulaParser, 'parse'> = new FormulaParser(),
+    formulaParser: Pick<IFormulaParser, 'parse'> = new FormulaParser()
   ) {
     this.#commands = commands;
     this.#queries = queries;
@@ -103,7 +103,7 @@ export class WebDataValidationDialog {
   public openCreate(
     initialKind: DataValidationKind = DataValidationKind.Dropdown,
     existing?: PositionedDataValidationRule,
-    onCancel?: () => void,
+    onCancel?: () => void
   ): void {
     const selections = existing ? [] : this.#getSelections();
     const selection = selections.at(-1) ?? this.#getSelection();
@@ -145,11 +145,16 @@ export class WebDataValidationDialog {
     tabButtons.forEach((tab, index) => {
       this.#controls.listen(tab, 'click', () => activateTab(index));
       this.#controls.listen(tab, 'keydown', (event) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') return;
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End')
+          return;
         event.preventDefault();
         event.stopPropagation();
-        const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabButtons.length - 1
-          : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabButtons.length) % tabButtons.length;
+        const next =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+            ? tabButtons.length - 1
+            : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabButtons.length) % tabButtons.length;
         activateTab(next, true);
       });
     });
@@ -159,9 +164,13 @@ export class WebDataValidationDialog {
           focus: [existing.rule.endRow, existing.rule.endColumn] as [number, number],
         }
       : selection!;
-    const range = input('Cell range', existing
-      ? formatRange(selectedRange.anchor, selectedRange.focus)
-      : selections.map((item) => formatRange(item.anchor, item.focus)).join(', '), this.#controls);
+    const range = input(
+      'Cell range',
+      existing
+        ? formatRange(selectedRange.anchor, selectedRange.focus)
+        : selections.map((item) => formatRange(item.anchor, item.focus)).join(', '),
+      this.#controls
+    );
     settings.append(field('Cell range', range));
     const kind = select('Rule type', dataValidationKindLabels, existing?.rule.condition.kind ?? initialKind);
     for (const option of Array.from(kind.options)) {
@@ -173,10 +182,13 @@ export class WebDataValidationDialog {
     const conditionFields = document.createElement('div');
     conditionFields.className = 'sear-validation-fields';
     settings.append(conditionFields);
-    const conditionDrafts = new Map<DataValidationKind, {
-      host: HTMLElement;
-      read: () => DataValidationCondition | null;
-    }>();
+    const conditionDrafts = new Map<
+      DataValidationKind,
+      {
+        host: HTMLElement;
+        read: () => DataValidationCondition | null;
+      }
+    >();
     let activeKind: DataValidationKind | null = null;
     const showCondition = (): (() => DataValidationCondition | null) => {
       if (activeKind !== null) {
@@ -189,7 +201,7 @@ export class WebDataValidationDialog {
         const read = this.#renderConditionFields(
           host,
           selectedKind,
-          existing?.rule.condition.kind === selectedKind ? existing.rule.condition : undefined,
+          existing?.rule.condition.kind === selectedKind ? existing.rule.condition : undefined
         );
         draft = { host, read };
         conditionDrafts.set(selectedKind, draft);
@@ -215,12 +227,12 @@ export class WebDataValidationDialog {
         [DataValidationInputPolicy.Reject]: 'Reject input and warn',
         [DataValidationInputPolicy.Warn]: 'Allow input and warn',
       },
-      existing?.rule.inputPolicy ?? DataValidationInputPolicy.Reject,
+      existing?.rule.inputPolicy ?? DataValidationInputPolicy.Reject
     );
     const errorMessage = input(
       'Warning message',
       existing?.rule.errorMessage ?? defaultErrorMessage(kind.value as DataValidationKind),
-      this.#controls,
+      this.#controls
     );
     const promptEnabled = checkbox('Show input message when selected', !!existing?.rule.inputMessage);
     const inputMessage = input('Input message', existing?.rule.inputMessage ?? '', this.#controls);
@@ -233,13 +245,13 @@ export class WebDataValidationDialog {
       field('When input is invalid', policy),
       field('Warning message', errorMessage),
       promptEnabled.closest('label')!,
-      field('Input message', inputMessage),
+      field('Input message', inputMessage)
     );
 
     const actions = document.createElement('div');
     actions.className = 'sear-cell-highlight-actions';
     const cancel = button('Cancel');
-    this.#controls.listen(cancel, 'click', () => onCancel ? onCancel() : this.destroy());
+    this.#controls.listen(cancel, 'click', () => (onCancel ? onCancel() : this.destroy()));
     const save = button('OK');
     save.dataset['role'] = 'confirm';
     this.#controls.listen(save, 'click', () => {
@@ -282,10 +294,12 @@ export class WebDataValidationDialog {
         ...(promptEnabled.checked && inputMessage.value ? { inputMessage: inputMessage.value } : {}),
       };
       try {
-        for (const target of parsed) this.#commands.run(SetDataValidationRuleCommand, {
-          ...target!, rule,
-          ...(existing ? { id: existing.rule.id } : {}),
-        });
+        for (const target of parsed)
+          this.#commands.run(SetDataValidationRuleCommand, {
+            ...target!,
+            rule,
+            ...(existing ? { id: existing.rule.id } : {}),
+          });
         this.destroy();
       } catch (cause) {
         let error = panel.querySelector<HTMLElement>('[role="alert"]');
@@ -311,10 +325,16 @@ export class WebDataValidationDialog {
     range.focus();
   }
 
-  public openManage(state: { scope: 'selection' | 'sheet'; scrollTop: number } = { scope: 'selection', scrollTop: 0 }): void {
+  public openManage(
+    state: { scope: 'selection' | 'sheet'; scrollTop: number } = { scope: 'selection', scrollTop: 0 }
+  ): void {
     this.destroy();
     const { root, panel } = this.#createShell('All data validation rules');
-    const scope = select<'selection' | 'sheet'>('Scope', { selection: 'Selection', sheet: 'Current sheet' }, state.scope);
+    const scope = select<'selection' | 'sheet'>(
+      'Scope',
+      { selection: 'Selection', sheet: 'Current sheet' },
+      state.scope
+    );
     const list = document.createElement('div');
     list.className = 'sear-cell-highlight-list';
     const render = () => {
@@ -331,7 +351,7 @@ export class WebDataValidationDialog {
               row <= bounds.focus[0] &&
               column <= bounds.focus[1] &&
               rule.endRow >= bounds.anchor[0] &&
-              rule.endColumn >= bounds.anchor[1]),
+              rule.endColumn >= bounds.anchor[1])
         );
       if (!rules.length) {
         const empty = document.createElement('p');
@@ -343,17 +363,19 @@ export class WebDataValidationDialog {
         row.className = 'sear-cell-highlight-rule';
         const title = document.createElement('span');
         const kindLabel = dataValidationKindLabels[entry.rule.condition.kind];
-        const rangeLabel = formatRange(
-          [entry.row, entry.column],
-          [entry.rule.endRow, entry.rule.endColumn],
-        );
+        const rangeLabel = formatRange([entry.row, entry.column], [entry.rule.endRow, entry.rule.endColumn]);
         const condition = entry.rule.condition;
-        const sourceLabel = condition.kind === DataValidationKind.Dropdown
-          ? condition.sourceRange
-            ? `Range reference ${formatRange(condition.sourceRange.start, condition.sourceRange.end)}`
-            : `Custom options ${condition.options?.slice(0, 2).map((option) => option.label).join(', ') || 'none'}${
-              (condition.options?.length ?? 0) > 2 ? ` (${condition.options!.length} total)` : ''}`
-          : '';
+        const sourceLabel =
+          condition.kind === DataValidationKind.Dropdown
+            ? condition.sourceRange
+              ? `Range reference ${formatRange(condition.sourceRange.start, condition.sourceRange.end)}`
+              : `Custom options ${
+                  condition.options
+                    ?.slice(0, 2)
+                    .map((option) => option.label)
+                    .join(', ') || 'none'
+                }${(condition.options?.length ?? 0) > 2 ? ` (${condition.options!.length} total)` : ''}`
+            : '';
         title.textContent = `${kindLabel} · ${rangeLabel}${sourceLabel ? `\n${sourceLabel}` : ''}`;
         if (sourceLabel) title.className = 'sear-validation-rule-summary';
         const edit = button('Edit');
@@ -363,7 +385,10 @@ export class WebDataValidationDialog {
           this.openCreate(entry.rule.condition.kind, entry, () => this.openManage(returnState));
         });
         const remove = button('Delete');
-        remove.setAttribute('aria-label', `Delete ${kindLabel} rule ${rangeLabel}${sourceLabel ? `, ${sourceLabel}` : ''}`);
+        remove.setAttribute(
+          'aria-label',
+          `Delete ${kindLabel} rule ${rangeLabel}${sourceLabel ? `, ${sourceLabel}` : ''}`
+        );
         this.#controls.listen(remove, 'click', () => {
           this.#commands.run(RemoveDataValidationRuleCommand, { id: entry.rule.id });
           render();
@@ -393,14 +418,13 @@ export class WebDataValidationDialog {
   }
 
   #sheetShape(): readonly number[] | null {
-    return this.#queries.has?.(ReadSheetCellDataQuery)
-      ? this.#queries.run(ReadSheetCellDataQuery, void 0).shape : null;
+    return this.#queries.has?.(ReadSheetCellDataQuery) ? this.#queries.run(ReadSheetCellDataQuery, void 0).shape : null;
   }
 
   #renderConditionFields(
     host: HTMLElement,
     kind: DataValidationKind,
-    previous?: DataValidationCondition,
+    previous?: DataValidationCondition
   ): () => DataValidationCondition | null {
     host.replaceChildren();
     if (kind === DataValidationKind.Dropdown) return this.#renderDropdown(host, previous);
@@ -440,12 +464,12 @@ export class WebDataValidationDialog {
         [DataValidationDropdownMode.Single]: 'Single selection',
         [DataValidationDropdownMode.Multiple]: 'Multiple selection',
       },
-      previous?.dropdownMode ?? DataValidationDropdownMode.Single,
+      previous?.dropdownMode ?? DataValidationDropdownMode.Single
     );
     const source = select(
       'Option source',
       { custom: 'Custom', range: 'Range reference' },
-      previous?.sourceRange ? 'range' : 'custom',
+      previous?.sourceRange ? 'range' : 'custom'
     );
     const options = document.createElement('div');
     options.className = 'sear-validation-options';
@@ -455,7 +479,7 @@ export class WebDataValidationDialog {
     const reference = input(
       'Reference range',
       previous?.sourceRange ? formatRange(previous.sourceRange.start, previous.sourceRange.end) : '',
-      this.#controls,
+      this.#controls
     );
     const updateOptionNames = () => {
       Array.from(options.children).forEach((element, index) => {
@@ -520,7 +544,7 @@ export class WebDataValidationDialog {
       updateOptionNames();
     };
     (previous?.options?.length ? previous.options : [{ label: '' }, { label: '' }]).forEach((option) =>
-      addOption(option.label, option.color),
+      addOption(option.label, option.color)
     );
     this.#controls.listen(add, 'click', () => addOption());
     this.#controls.listen(colorEnabled, 'change', () => {
@@ -540,7 +564,7 @@ export class WebDataValidationDialog {
       options,
       add,
       colorEnabled.closest('label')!,
-      arrow.closest('label')!,
+      arrow.closest('label')!
     );
     updateSource();
     return () => {
@@ -551,15 +575,14 @@ export class WebDataValidationDialog {
         return null;
       }
       const shape = sourceRange && this.#sheetShape();
-      if (sourceRange && shape &&
-        (sourceRange.focus[0] >= shape[0]! || sourceRange.focus[1] >= shape[1]!)) {
+      if (sourceRange && shape && (sourceRange.focus[0] >= shape[0]! || sourceRange.focus[1] >= shape[1]!)) {
         reference.setCustomValidity('Reference range exceeds the sheet bounds.');
         reference.reportValidity();
         return null;
       }
-      const values = Array.from(options.querySelectorAll<HTMLInputElement>('[data-role="validation-option-text"]')).filter(
-        (item) => item.value.trim() !== '',
-      );
+      const values = Array.from(
+        options.querySelectorAll<HTMLInputElement>('[data-role="validation-option-text"]')
+      ).filter((item) => item.value.trim() !== '');
       if (source.value === 'custom' && !values.length) {
         options.querySelector<HTMLInputElement>('input')?.setCustomValidity('Add an option.');
         options.querySelector<HTMLInputElement>('input')?.reportValidity();
@@ -598,14 +621,14 @@ export class WebDataValidationDialog {
   #renderComparison(
     host: HTMLElement,
     kind: DataValidationKind,
-    previous?: DataValidationCondition,
+    previous?: DataValidationCondition
   ): () => DataValidationCondition | null {
     const textMode =
       kind === DataValidationKind.Text
         ? select(
             'Validate',
             { [DataValidationTextMode.Content]: 'Content', [DataValidationTextMode.Length]: 'Length' },
-            previous?.textMode ?? DataValidationTextMode.Content,
+            previous?.textMode ?? DataValidationTextMode.Content
           )
         : null;
     const integer = kind === DataValidationKind.Number ? checkbox('Whole numbers only', !!previous?.integerOnly) : null;
@@ -616,14 +639,14 @@ export class WebDataValidationDialog {
         ? textLabels
         : comparisonLabels,
       previous?.operator ??
-        (kind === DataValidationKind.Text ? DataValidationOperator.StartsWith : DataValidationOperator.Equal),
+        (kind === DataValidationKind.Text ? DataValidationOperator.StartsWith : DataValidationOperator.Equal)
     );
     const first = input('Comparison value', previous?.value ?? '', this.#controls);
     const second = input('Second comparison value', previous?.secondValue ?? '', this.#controls);
-    const firstDatePicker = kind === DataValidationKind.Date
-      ? datePicker('Choose comparison date', first, this.#controls) : null;
-    const secondDatePicker = kind === DataValidationKind.Date
-      ? datePicker('Choose second comparison date', second, this.#controls) : null;
+    const firstDatePicker =
+      kind === DataValidationKind.Date ? datePicker('Choose comparison date', first, this.#controls) : null;
+    const secondDatePicker =
+      kind === DataValidationKind.Date ? datePicker('Choose second comparison date', second, this.#controls) : null;
     if (kind === DataValidationKind.Date) {
       const hint = document.createElement('p');
       hint.className = 'sear-validation-date-hint';
@@ -640,7 +663,7 @@ export class WebDataValidationDialog {
           option.value = value;
           option.textContent = label;
           return option;
-        }),
+        })
       );
       operator.value = Object.hasOwn(labels, current)
         ? current
@@ -669,7 +692,7 @@ export class WebDataValidationDialog {
         firstDatePicker && field('Choose comparison date', firstDatePicker),
         field('Second comparison value', second),
         secondDatePicker && field('Choose second comparison date', secondDatePicker),
-      ].filter((node): node is HTMLLabelElement => !!node),
+      ].filter((node): node is HTMLLabelElement => !!node)
     );
     update();
     return () => {
@@ -705,7 +728,10 @@ export class WebDataValidationDialog {
             return null;
           }
         }
-        if (integer?.checked && !hasIntegerSolution(operator.value as DataValidationOperator, firstNumber, secondNumber)) {
+        if (
+          integer?.checked &&
+          !hasIntegerSolution(operator.value as DataValidationOperator, firstNumber, secondNumber)
+        ) {
           const invalid = hasSecond ? second : first;
           invalid.setCustomValidity('No whole number satisfies this rule.');
           invalid.reportValidity();
@@ -829,7 +855,7 @@ function checkbox(label: string, checked: boolean): HTMLInputElement {
 function select<T extends string>(
   label: string,
   labels: Readonly<Partial<Record<T, string>>>,
-  value: T,
+  value: T
 ): HTMLSelectElement {
   const element = document.createElement('select');
   element.setAttribute('aria-label', label);

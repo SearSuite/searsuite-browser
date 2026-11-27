@@ -253,7 +253,7 @@ export class WebDropdownController {
     search.focus();
     this.#focusFrame = this.#platform.requestAnimationFrame(() => {
       this.#focusFrame = null;
-      if (this.#panel === panel) search.focus();
+      if (this.#panel === panel && !panel.contains(document.activeElement)) search.focus();
     });
   }
   #close(restoreFocus = false): void {

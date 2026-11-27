@@ -5,9 +5,20 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@searsuite/*": ["packages/*/src", "../searsuite/packages/*/src"]
+      "@searsuite/*": [
+        "packages/*/src",
+        "../searsuite/packages/*/src"
+      ]
     },
-    "types": ["jest", "node"]
+    "types": [
+      "jest",
+      "node"
+    ]
   },
-  "exclude": ["node_modules", "**/dist", "**/dist/**"]
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/dist/**",
+    "examples/npm"
+  ]
 }

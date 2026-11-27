@@ -24,7 +24,7 @@ it('binds single use, continuous painting, Escape, drag completion and teardown'
   bus.bind({
     executePipeline: (pipeline) => {
       pipeline.steps.forEach((step) => step.localAction?.());
-      pipeline.emitComplete(false);
+      pipeline.emitComplete();
     },
     applyEffect: () => undefined,
   });

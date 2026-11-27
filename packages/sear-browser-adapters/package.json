@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@searsuite/sear-domain-collaboration": "workspace:*",
+    "@searsuite/sear-domain-commands": "workspace:*",
     "@searsuite/sear-foundation-di": "workspace:*",
     "@searsuite/sear-foundation-error": "workspace:*",
     "@searsuite/sear-foundation-keymap": "workspace:*",

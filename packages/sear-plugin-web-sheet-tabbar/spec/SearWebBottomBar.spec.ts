@@ -1,12 +1,11 @@
 import type { Platform } from '@searsuite/sear-foundation-platform';
 import { createWorkbookDocumentState } from '@searsuite/sear-domain-workbook';
-import {
-  createWorkbookEditor,
-  WorkbookCommandBus,
-  type WorkbookSheetEditorFactoryInput,
-} from '@searsuite/sear-assembly-workbook';
+import { createWorkbookEditor, type WorkbookSheetEditorFactoryInput } from '@searsuite/sear-assembly-workbook';
+import { WorkbookCommandBus } from '@searsuite/sear-assembly-workbook-kernel';
 import { SheetQueryRegistry, type SheetCommandBus } from '@searsuite/sear-assembly-commands';
-import { type SheetEditor, type SheetEditorAdapters, type SheetDocumentState } from '@searsuite/sear-assembly-setup';
+import { type SheetEditor } from '@searsuite/sear-assembly-commands';
+import { type SheetEditorAdapters } from '@searsuite/sear-assembly-setup';
+import { type SheetDocumentState } from '@searsuite/sear-assembly-sheet-state';
 import { SelectRangeCommand } from '@searsuite/sear-plugin-selection';
 import { IsCellEditingQuery } from '@searsuite/sear-plugin-cell-editor';
 import {
@@ -401,7 +400,7 @@ describe('SearWebBottomBar', () => {
     target.querySelector<HTMLElement>('.sear-sheet-bottom-bar__add')?.click();
 
     expect(
-      Array.from(document.querySelectorAll('.sear-sheet-bottom-bar__toast')).some((node) => node.textContent === 'old'),
+      Array.from(document.querySelectorAll('.sear-sheet-bottom-bar__toast')).some((node) => node.textContent === 'old')
     ).toBe(false);
     expect(document.querySelector('.sear-sheet-bottom-bar__toast')?.textContent).toBe('Not implemented yet');
 

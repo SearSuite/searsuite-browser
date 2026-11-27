@@ -2,7 +2,7 @@ import { type SearCoreSheet } from '@searsuite/sear-assembly-core';
 import { SheetQueryRegistry } from '@searsuite/sear-assembly-commands';
 import { BrowserPlatform } from '@searsuite/sear-browser-adapters';
 import { SheetFreezeFieldKey } from '@searsuite/sear-plugin-freeze';
-import { SheetColumnSizesFieldKey, SheetRowSizesFieldKey } from '@searsuite/sear-render-engine';
+import { SheetColumnSizesFieldKey, SheetRowSizesFieldKey } from '@searsuite/sear-domain-sheet';
 import {
   DataValidationInputPolicy,
   DataValidationKind,
@@ -41,8 +41,10 @@ describe('WebDataValidationFeedback', () => {
       getDimensionRightBoundaryByIndex: (index: number) => (index + 1) * 4,
     };
     const core = {
-      getDataEngine: () => ({ readDataViewField: (_: string, key: string) =>
-        key === SheetRowSizesFieldKey || key === SheetColumnSizesFieldKey ? sizes : null }),
+      getDataEngine: () => ({
+        readDataViewField: (_: string, key: string) =>
+          key === SheetRowSizesFieldKey || key === SheetColumnSizesFieldKey ? sizes : null,
+      }),
       configEngine: { getDefaultConfig: () => ({}) },
       renderEngine: {
         renderContext: { getRoot: () => root },
@@ -53,17 +55,29 @@ describe('WebDataValidationFeedback', () => {
     let selected: [number, number] = [19, 10];
     let issue: DataValidationIssue | null = null;
     queries.register(ReadDataValidationIssueQuery, () => issue);
-    queries.register(ReadDataValidationCellRulesQuery, ([row, column]) => row === 19 && column === 10 ? [{
-      row, column,
-      rule: {
-        id: 'identity', endRow: row, endColumn: column,
-        condition: { kind: DataValidationKind.IdentityCard },
-        inputPolicy: DataValidationInputPolicy.Reject,
-        inputMessage: 'Enter an ID number',
-      },
-    }] : []);
+    queries.register(ReadDataValidationCellRulesQuery, ([row, column]) =>
+      row === 19 && column === 10
+        ? [
+            {
+              row,
+              column,
+              rule: {
+                id: 'identity',
+                endRow: row,
+                endColumn: column,
+                condition: { kind: DataValidationKind.IdentityCard },
+                inputPolicy: DataValidationInputPolicy.Reject,
+                inputMessage: 'Enter an ID number',
+              },
+            },
+          ]
+        : []
+    );
     const feedback = new WebDataValidationFeedback(
-      core, queries, () => ({ anchor: selected, focus: selected }), new BrowserPlatform(),
+      core,
+      queries,
+      () => ({ anchor: selected, focus: selected }),
+      new BrowserPlatform()
     );
 
     feedback.refresh();
@@ -85,9 +99,15 @@ describe('WebDataValidationFeedback', () => {
 
   it('BUG-466 keeps feedback beside a frozen cell after scrolling past its original position', () => {
     const root = document.createElement('div');
-    root.getBoundingClientRect = () => ({
-      left: 0, right: 600, top: 0, bottom: 600, width: 600, height: 600,
-    } as DOMRect);
+    root.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        right: 600,
+        top: 0,
+        bottom: 600,
+        width: 600,
+        height: 600,
+      } as DOMRect);
     document.body.append(root);
     const rowSizes = {
       shape: [1, 50],
@@ -100,13 +120,15 @@ describe('WebDataValidationFeedback', () => {
       getDimensionRightBoundaryByIndex: (index: number) => (index + 1) * 100,
     };
     let frozen = true;
-    const dataEngine = { readDataViewField: (_namespace: string, key: string) => {
-      if (key === SheetRowSizesFieldKey) return rowSizes;
-      if (key === SheetColumnSizesFieldKey) return columnSizes;
-      if (key === SheetFreezeFieldKey) return { getItem: (_row: number, column: number) =>
-        frozen ? (column === 0 ? 3 : 2) : 0 };
-      return null;
-    } };
+    const dataEngine = {
+      readDataViewField: (_namespace: string, key: string) => {
+        if (key === SheetRowSizesFieldKey) return rowSizes;
+        if (key === SheetColumnSizesFieldKey) return columnSizes;
+        if (key === SheetFreezeFieldKey)
+          return { getItem: (_row: number, column: number) => (frozen ? (column === 0 ? 3 : 2) : 0) };
+        return null;
+      },
+    };
     const core = {
       getDataEngine: () => dataEngine,
       configEngine: { getDefaultConfig: () => ({ sheetOffsetX: 50, sheetOffsetY: 24 }) },
@@ -117,10 +139,16 @@ describe('WebDataValidationFeedback', () => {
     } as unknown as SearCoreSheet;
     const queries = new SheetQueryRegistry();
     queries.register(ReadDataValidationIssueQuery, () => ({
-      row: 1, column: 1, ruleId: 'identity', message: 'Invalid input.',
+      row: 1,
+      column: 1,
+      ruleId: 'identity',
+      message: 'Invalid input.',
     }));
     const feedback = new WebDataValidationFeedback(
-      core, queries, () => ({ anchor: [1, 1], focus: [1, 1] }), new BrowserPlatform(),
+      core,
+      queries,
+      () => ({ anchor: [1, 1], focus: [1, 1] }),
+      new BrowserPlatform()
     );
 
     feedback.refresh();

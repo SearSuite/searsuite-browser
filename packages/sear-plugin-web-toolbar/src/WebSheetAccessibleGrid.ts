@@ -1,6 +1,6 @@
 import { columnIndexToLabel } from '@searsuite/sear-foundation-utils';
 import { type SheetFormulaBarState } from '@searsuite/sear-plugin-cell-editor';
-import { type SheetCellDataReader } from '@searsuite/sear-render-engine';
+import { type SheetCellDataReader } from '@searsuite/sear-domain-sheet';
 import { type IFormulaRichResultProvider } from '@searsuite/sear-domain-formula-engine';
 
 const GRID_PROXY_ATTRIBUTE = 'data-sear-grid-proxy';
@@ -37,7 +37,7 @@ export class WebSheetAccessibleGrid {
   public render(
     state: SheetFormulaBarState,
     cells: SheetCellDataReader | null,
-    richResults?: IFormulaRichResultProvider,
+    richResults?: IFormulaRichResultProvider
   ): void {
     const grid = this.#grid;
     if (!grid) return;

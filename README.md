@@ -6,7 +6,7 @@ Browser implementations of the platform-neutral SearSuite contracts. Keep this r
 
 All four Browser packages have `0.0.1` available on npm. Application users can follow the [npm Quickstart](https://searsuite.com/docs/quickstart/) without checking out the source workspaces.
 
-The [standalone npm examples](examples/npm/README.md) provide Sheet, Workbook and Node.js Headless entries with a registry lockfile. Copy `examples/npm` to an application directory, run `npm ci`, then `npm run dev`. Open `/` for Workbook or `/sheet.html` for one Sheet. Run `npm run headless` for Node.
+The [standalone npm examples](examples/npm/README.md) provide Sheet, Workbook and Node.js Headless entries using registry packages. Copy `examples/npm` to an application directory, run `npm install`, then `npm run dev`. Open `/` for Workbook or `/sheet.html` for one Sheet. Run `npm run headless` for Node.
 
 The examples' `src/browser-host.ts` defines an application-owned `createBrowserAdapters(canvas)` helper. It reuses published adapters and keeps environment wiring out of the editor entries; it is not a new package export. Each entry shows toolbar ownership and teardown. The [Quickstart](https://searsuite.com/docs/quickstart/#browser-adapters) embeds the same files.
 

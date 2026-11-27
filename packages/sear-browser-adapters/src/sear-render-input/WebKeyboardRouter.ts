@@ -90,8 +90,7 @@ export class WebKeyboardRouter extends KeyboardRouter {
   #handleUnhandledEscape(event: KeyboardEvent): void {
     if (event.key !== KeyboardKey.Escape || event.defaultPrevented || event.isComposing || !this.#handlers.onUnhandledEscape)
       return;
-    this.#handlers.onUnhandledEscape();
-    event.preventDefault();
+    if (this.#handlers.onUnhandledEscape()) event.preventDefault();
   }
 
   #handleKeyDown(event: KeyboardEvent): void {
@@ -278,7 +277,7 @@ export class WebKeyboardRouter extends KeyboardRouter {
       event.stopPropagation();
     } else if (event.key === KeyboardKey.Escape) {
       if (event.isComposing || event.keyCode === 229) return;
-      this.#handlers.onEscape?.();
+      if (!this.#handlers.onEscape || this.#handlers.onEscape() === false) return;
       event.preventDefault();
       event.stopPropagation();
     } else if (event.key === 'F2' && !event.ctrlKey && !event.metaKey && !event.altKey) {

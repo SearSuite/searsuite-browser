@@ -1,7 +1,8 @@
 import { Injectable } from '@searsuite/sear-foundation-di';
 import { KeyboardKey } from '@searsuite/sear-foundation-keymap';
 import { TextInput } from '@searsuite/sear-render-input';
-import { TextInputKind, type TextInputEvent, type TextInputHandlers } from '@searsuite/sear-render-input';
+import { type TextInputHandlers } from '@searsuite/sear-render-input';
+import { TextInputKind, type TextInputEvent } from '@searsuite/sear-domain-commands';
 
 /**
  * Browser implementation of `TextInput`.

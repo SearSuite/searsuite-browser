@@ -21,16 +21,17 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@searsuite/sear-assembly-setup": "workspace:*",
+    "@searsuite/sear-assembly-sheet-state": "workspace:*",
     "@searsuite/sear-assembly-workbook": "workspace:*",
+    "@searsuite/sear-assembly-workbook-kernel": "workspace:*",
+    "@searsuite/sear-domain-sheet": "workspace:*",
     "@searsuite/sear-domain-workbook": "workspace:*",
     "@searsuite/sear-foundation-common": "workspace:*",
     "@searsuite/sear-foundation-di": "workspace:*",
     "@searsuite/sear-foundation-platform": "workspace:*",
     "@searsuite/sear-plugin-cell-editor": "workspace:*",
     "@searsuite/sear-plugin-selection": "workspace:*",
-    "@searsuite/sear-plugin-zoom": "workspace:*",
-    "@searsuite/sear-render-engine": "workspace:*"
+    "@searsuite/sear-render": "workspace:*"
   },
   "exports": {
     ".": {

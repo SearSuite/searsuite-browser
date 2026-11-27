@@ -1,7 +1,7 @@
 import { KeyboardKey } from '@searsuite/sear-foundation-keymap';
 
 import { WebTextInput } from '../../src';
-import { TextInputKind } from '@searsuite/sear-render-input';
+import { TextInputKind } from '@searsuite/sear-domain-commands';
 
 function getHiddenInput(): HTMLInputElement {
   const input = document.getElementById('searTextInput');

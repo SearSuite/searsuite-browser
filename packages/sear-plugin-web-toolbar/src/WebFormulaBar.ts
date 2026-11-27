@@ -1,5 +1,5 @@
 import { SearFormulaBar } from '@searsuite/sear-assembly-plugin';
-import { SearCore, type SearCoreSheet } from '@searsuite/sear-assembly-core';
+import { SearCoreSheet } from '@searsuite/sear-assembly-core';
 import { SheetCommandBus, SheetQueryRegistry } from '@searsuite/sear-assembly-commands';
 import { Inject, Injectable } from '@searsuite/sear-foundation-di';
 import { Platform } from '@searsuite/sear-foundation-platform';
@@ -17,7 +17,7 @@ import {
   type SheetFormulaBarState,
 } from '@searsuite/sear-plugin-cell-editor';
 import { EnsureSelectionVisibleCommand, SelectRangeCommand } from '@searsuite/sear-plugin-selection';
-import { ReadSheetCellDataQuery } from '@searsuite/sear-render-engine';
+import { ReadSheetCellDataQuery } from '@searsuite/sear-domain-sheet';
 import { TextInput } from '@searsuite/sear-render-input';
 import { WebControlEventScope } from './WebControlEventScope';
 import { WebSheetAccessibleGrid } from './WebSheetAccessibleGrid';
@@ -56,7 +56,10 @@ function rangeLabel(state: SheetFormulaBarState): string {
   return `${cellLabel(range.start[0], range.start[1])}:${cellLabel(range.end[0], range.end[1])}`;
 }
 
-export function parseAddress(text: string, shape: readonly number[]): { anchor: [number, number]; focus: [number, number] } | null {
+export function parseAddress(
+  text: string,
+  shape: readonly number[]
+): { anchor: [number, number]; focus: [number, number] } | null {
   const address = text.trim();
   const columns = /^([A-Z]+):([A-Z]+)$/i.exec(address);
   if (columns) {
@@ -107,9 +110,9 @@ export class WebFormulaBar extends SearFormulaBar {
     @Inject(SheetCommandBus.symbol) commands: SheetCommandBus,
     @Inject(SheetQueryRegistry.symbol) queries: SheetQueryRegistry,
     @Inject(ObservationRegistry.symbol) observations: ObservationRegistry,
-    @Inject(SearCore.symbol) core: SearCoreSheet,
+    @Inject(SearCoreSheet.symbol) core: SearCoreSheet,
     @Inject(TextInput.symbol) sheetTextInput: TextInput,
-    @Inject(IFormulaRichResultProvider.symbol) richResults?: IFormulaRichResultProvider,
+    @Inject(IFormulaRichResultProvider.symbol) richResults?: IFormulaRichResultProvider
   ) {
     super();
     this.#platform = platform;
@@ -228,7 +231,8 @@ export class WebFormulaBar extends SearFormulaBar {
   }
 
   #scheduleActiveCellVisibility(): void {
-    if (!this.#expanded || this.#ensureVisibleFrame !== null || !this.#commands.has(EnsureSelectionVisibleCommand)) return;
+    if (!this.#expanded || this.#ensureVisibleFrame !== null || !this.#commands.has(EnsureSelectionVisibleCommand))
+      return;
     this.#ensureVisibleFrame = this.#platform.requestAnimationFrame(() => {
       this.#ensureVisibleFrame = null;
       const cell = this.#state?.cell;
@@ -254,7 +258,7 @@ export class WebFormulaBar extends SearFormulaBar {
     this.#accessibleGrid?.render(
       state,
       this.#queries.has(ReadSheetCellDataQuery) ? this.#queries.run(ReadSheetCellDataQuery, void 0) : null,
-      this.#richResults,
+      this.#richResults
     );
     if (!this.#root || !this.#nameInput || !this.#textInput) return;
     this.#root.dataset['editing'] = String(state.editing);
@@ -315,28 +319,49 @@ export class WebFormulaBar extends SearFormulaBar {
       return;
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      this.#commands.run(HandleFormulaBarKeyCommand, event.altKey
-        ? { action: 'softEnter' }
-        : { action: 'enter', shiftKey: event.shiftKey, primaryModifier: event.ctrlKey || event.metaKey });
+      this.#commands.run(
+        HandleFormulaBarKeyCommand,
+        event.altKey
+          ? { action: 'softEnter' }
+          : { action: 'enter', shiftKey: event.shiftKey, primaryModifier: event.ctrlKey || event.metaKey }
+      );
       this.#focusAfterKey();
     } else if (event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
       this.#commands.run(HandleFormulaBarKeyCommand, { action: 'tab', shiftKey: event.shiftKey });
       this.#focusAfterKey();
-    } else if ((event.key === 'Home' || event.key === 'End') && !event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+    } else if (
+      (event.key === 'Home' || event.key === 'End') &&
+      !event.altKey &&
+      !event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       event.preventDefault();
       const input = this.#textInput;
       if (!input) return;
       const position = event.key === 'Home' ? 0 : input.value.length;
       input.setSelectionRange(position, position);
       this.#writeSelection();
-    } else if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+    } else if (
+      (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
+      !event.altKey &&
+      !event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       if (!this.#observations.getSnapshot(FormulaInputAssistObservation).suggestions.length) return;
       event.preventDefault();
       this.#commands.run(HandleFormulaBarKeyCommand, {
         action: event.key === 'ArrowUp' ? 'suggestionUp' : 'suggestionDown',
       });
-    } else if ((event.key === 'PageUp' || event.key === 'PageDown') && !event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+    } else if (
+      (event.key === 'PageUp' || event.key === 'PageDown') &&
+      !event.altKey &&
+      !event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
       if (!this.#observations.getSnapshot(FormulaInputAssistObservation).suggestions.length) return;
       event.preventDefault();
       this.#commands.run(HandleFormulaBarKeyCommand, {
@@ -394,7 +419,7 @@ export class WebFormulaBar extends SearFormulaBar {
       selection &&
       cells &&
       [...selection.anchor, ...selection.focus].every(
-        (coordinate, index) => coordinate >= 0 && coordinate < cells.shape[index % 2],
+        (coordinate, index) => coordinate >= 0 && coordinate < cells.shape[index % 2]
       );
     if (!inBounds) {
       this.#restoreName();

@@ -8,8 +8,18 @@ import { bindWebClearStyle } from './WebClearStyleBinding';
 import { ClearRangeStylesCommand } from '@searsuite/sear-plugin-clear-style';
 import { bindWebFormatPainter } from './WebFormatPainterBinding';
 import { StartFormatPainterCommand, FormatPainterObservation } from '@searsuite/sear-plugin-format-painter';
-import { SearCore, SearCoreSheet } from '@searsuite/sear-assembly-core';
-import { ClearRangeContentsCommand, CommandExecutionPhase, DeleteColumnCommand, DeleteRowCommand, InsertColumnCommand, InsertRowCommand, SheetCommandBus, SheetQueryRegistry, type SheetRangeInput } from '@searsuite/sear-assembly-commands';
+import { SearCoreSheet } from '@searsuite/sear-assembly-core';
+import {
+  ClearRangeContentsCommand,
+  CommandExecutionPhase,
+  DeleteColumnCommand,
+  DeleteRowCommand,
+  InsertColumnCommand,
+  InsertRowCommand,
+  SheetCommandBus,
+  SheetQueryRegistry,
+  type SheetRangeInput,
+} from '@searsuite/sear-assembly-commands';
 import { CellFormats, CellType, type CellFormat } from '@searsuite/sear-domain-cell-types';
 import { IFormulaResultProvider } from '@searsuite/sear-domain-formula-engine';
 import { stringToRichDoc } from '@searsuite/sear-domain-doc';
@@ -42,7 +52,12 @@ import { Rect as RectRange } from '@searsuite/sear-foundation-rect';
 import { SelectRangeCommand, SheetSelectionPlugin } from '@searsuite/sear-plugin-selection';
 import { GetSelection, GetSelections } from '@searsuite/sear-plugin-selection';
 import { SheetClipboard, SheetClipboardError, SheetClipboardErrorCode } from '@searsuite/sear-plugin-clipboard';
-import { CancelCutRangeCommand, CopyRangeCommand, CutRangeCommand, PasteRangeCommand } from '@searsuite/sear-plugin-clipboard';
+import {
+  CancelCutRangeCommand,
+  CopyRangeCommand,
+  CutRangeCommand,
+  PasteRangeCommand,
+} from '@searsuite/sear-plugin-clipboard';
 import {
   RedoSheetCommand,
   SheetHistoryStatusProvider,
@@ -53,7 +68,17 @@ import { TOOLBAR_CSS } from './ToolbarCSS';
 import { SearToolbar } from '@searsuite/sear-assembly-plugin';
 import { createReplicaToolbar, SheetToolbarControlId } from './ReplicaToolbar';
 import { ensureSheetToolbarCommands } from './SheetToolbarCommands';
-import { CancelCellEditCommand, CommitCellEditCommand, HandleDocumentInputCommand, IsCellEditingQuery, ReadSelectedCellEditTextQuery, SetCellInlineStyleCommand, SetRangeCellTextStyleCommand, StartFormulaBarEditCommand, SetFormulaBarDraftCommand } from '@searsuite/sear-plugin-cell-editor';
+import {
+  CancelCellEditCommand,
+  CommitCellEditCommand,
+  HandleDocumentInputCommand,
+  IsCellEditingQuery,
+  ReadSelectedCellEditTextQuery,
+  SetCellInlineStyleCommand,
+  SetRangeCellTextStyleCommand,
+  StartFormulaBarEditCommand,
+  SetFormulaBarDraftCommand,
+} from '@searsuite/sear-plugin-cell-editor';
 import { ObservationRegistry } from '@searsuite/sear-foundation-subscription';
 import { WebFormulaAssistPopover } from './WebFormulaAssistPopover';
 import { WebSheetContextMenu, type SheetContextAction } from './WebSheetContextMenu';
@@ -69,11 +94,21 @@ import {
   type SheetEmbeddedEditHistoryState,
   type SheetEmbeddedInlineStyleState,
 } from '@searsuite/sear-sheet-editor-contract';
-import { ReadSheetCellDataQuery, readSheetColumnSizes, readSheetDataMatrix, readSheetRowSizes } from '@searsuite/sear-render-engine';
-import { KeyboardRouter, TextInput, TextInputKind } from '@searsuite/sear-render-input';
+import {
+  ReadSheetCellDataQuery,
+  readSheetColumnSizes,
+  readSheetDataMatrix,
+  readSheetRowSizes,
+} from '@searsuite/sear-domain-sheet';
+import { KeyboardRouter, TextInput } from '@searsuite/sear-render-input';
+import { TextInputKind } from '@searsuite/sear-domain-commands';
 import { CellNumberFormatDialog } from './CellNumberFormatDialog';
 import { CellNumberFormatMenu } from './CellNumberFormatMenu';
-import { SetRangeCellBorderCommand, SheetBorderPreset, type SheetBorderStroke } from '@searsuite/sear-plugin-cell-border';
+import {
+  SetRangeCellBorderCommand,
+  SheetBorderPreset,
+  type SheetBorderStroke,
+} from '@searsuite/sear-plugin-cell-border';
 import { WebCellBorderMenu } from './WebCellBorderMenu';
 import {
   CellHighlightKind,
@@ -82,7 +117,11 @@ import {
   AddCellHighlightRuleCommand,
   type CellHighlightCondition,
 } from '@searsuite/sear-plugin-cell-highlight';
-import { WebCellHighlightDialog, type ConditionalRuleBounds, type ConditionalRuleListRow } from './WebCellHighlightDialog';
+import {
+  WebCellHighlightDialog,
+  type ConditionalRuleBounds,
+  type ConditionalRuleListRow,
+} from './WebCellHighlightDialog';
 import {
   CanEvaluateDataValidationKindQuery,
   DataValidationKind,
@@ -192,7 +231,7 @@ export class SearWebToolbar extends SearToolbar {
 
   /** Constructs the toolbar adapter for one sheet editor. */
   constructor(
-    @Inject(SearCore.symbol) searCore: SearCoreSheet,
+    @Inject(SearCoreSheet.symbol) searCore: SearCoreSheet,
     @Inject(Platform.symbol) protected readonly platform: Platform,
     @Inject(SheetEmbeddedEditor.symbol) embeddedEditor: SheetEmbeddedEditor,
     @Inject(SheetClipboard.symbol)
@@ -209,7 +248,7 @@ export class SearWebToolbar extends SearToolbar {
     @Inject(FileDownload.symbol) protected readonly fileDownload?: FileDownload,
     @Inject(TextInput.symbol) protected readonly sheetTextInput?: TextInput,
     @Inject(IFormulaResultProvider.symbol) formulaResults?: IFormulaResultProvider,
-    @Inject(KeyboardRouter.symbol) keyboardRouter?: KeyboardRouter,
+    @Inject(KeyboardRouter.symbol) keyboardRouter?: KeyboardRouter
   ) {
     super();
     this.#searCore = searCore;
@@ -233,10 +272,15 @@ export class SearWebToolbar extends SearToolbar {
     this.#container = target as HTMLElement;
     this.#injectCSS();
     this.#buildToolbar();
-    this.#disposeCutEscape = this.platform.addEventListener(document, 'keydown', (event) => {
-      if ((event as KeyboardEvent).key === 'Escape' && this.#commandBus?.has(CancelCutRangeCommand))
-        this.#commandBus.run(CancelCutRangeCommand, void 0);
-    }, { capture: true });
+    this.#disposeCutEscape = this.platform.addEventListener(
+      document,
+      'keydown',
+      (event) => {
+        if ((event as KeyboardEvent).key === 'Escape' && this.#commandBus?.has(CancelCutRangeCommand))
+          this.#commandBus.run(CancelCutRangeCommand, void 0);
+      },
+      { capture: true }
+    );
     this.#disposeFindShortcut = this.platform.addEventListener(document, 'keydown', (event) => {
       const key = event as KeyboardEvent;
       if (!(key.metaKey || key.ctrlKey) || key.altKey || key.key.toLowerCase() !== 'f') return;
@@ -249,95 +293,180 @@ export class SearWebToolbar extends SearToolbar {
       key.preventDefault();
       this.#openFindReplaceDialog();
     });
-    this.#disposeCellFormatShortcut = this.platform.addEventListener(document, 'keydown', (event) => {
-      const key = event as KeyboardEvent;
-      if (!(key.metaKey || key.ctrlKey) || key.altKey || key.shiftKey || key.key !== '1' ||
-        key.defaultPrevented || this.#isCellEditing() || !this.#getSelectionRange() ||
-        !this.queries?.has(ReadSheetCellFormatQuery)) return;
-      key.preventDefault();
-      this.#openCellFormatDialog();
-    }, { capture: true });
-    this.#disposeDeleteShortcut = this.#keyboardRouter?.subscribe({
-      onDeleteCells: () => {
-        if (!this.#isCellEditing() && this.#getSelectionRange() && this.#commandBus?.has(MoveSheetRangeCommand))
-          this.#deleteCellsDialog.open((mode) => this.#deleteSelectedCells(mode));
+    this.#disposeCellFormatShortcut = this.platform.addEventListener(
+      document,
+      'keydown',
+      (event) => {
+        const key = event as KeyboardEvent;
+        if (
+          !(key.metaKey || key.ctrlKey) ||
+          key.altKey ||
+          key.shiftKey ||
+          key.key !== '1' ||
+          key.defaultPrevented ||
+          this.#isCellEditing() ||
+          !this.#getSelectionRange() ||
+          !this.queries?.has(ReadSheetCellFormatQuery)
+        )
+          return;
+        key.preventDefault();
+        this.#openCellFormatDialog();
       },
-    }) ?? null;
-    this.#disposeGoToShortcut = this.platform.addEventListener(document, 'keydown', (event) => {
-      const key = event as KeyboardEvent;
-      if (key.key !== 'F5' || key.altKey || key.ctrlKey || key.metaKey || key.shiftKey ||
-        key.defaultPrevented || this.#isCellEditing() || !this.#getSelectionRange() ||
-        !this.#commandBus?.has(SelectRangeCommand)) return;
-      key.preventDefault();
-      this.#goToDialog.open(
-        (choice, address) => this.#goToSelection(choice, address),
-        () => focusWebSheetSurface(this.#searCore.renderEngine?.renderContext?.getRoot()),
-      );
-    }, { capture: true });
-    this.#disposeHyperlinkShortcut = this.platform.addEventListener(document, 'keydown', (event) => {
-      const key = event as KeyboardEvent;
-      if (!(key.metaKey || key.ctrlKey) || key.altKey || key.shiftKey || key.key.toLowerCase() !== 'k' ||
-        key.defaultPrevented || this.#isCellEditing() || !this.#getSelectionRange() ||
-        !this.#commandBus?.has(StartFormulaBarEditCommand)) return;
-      key.preventDefault();
-      const [row, column] = this.#getSelectionRange()!.anchor;
-      const cell = this.queries?.has(ReadSheetCellDataQuery)
-        ? this.queries.run(ReadSheetCellDataQuery, void 0).getItem(row, column) : null;
-      const label = String(this.#formulaResults?.getFormulaResult(row, column) ?? cell?.value ?? '');
-      this.#hyperlinkDialog.open(
-        label,
-        (draft) => this.#insertHyperlink(draft),
-        () => focusWebSheetSurface(this.#searCore.renderEngine?.renderContext?.getRoot()),
-      );
-    }, { capture: true });
-    this.#disposeFilterShortcut = this.platform.addEventListener(document, 'keydown', (event) => {
-      const key = event as KeyboardEvent;
-      if (!(key.metaKey || key.ctrlKey) || !key.shiftKey || key.altKey || key.key.toLowerCase() !== 'l' ||
-        key.defaultPrevented || this.#isCellEditing() || !this.#getSelectionRange()) return;
-      if (!this.#commandBus?.has(CreateSheetFilterCommand) || !this.#commandBus.has(ClearSheetFilterCommand) ||
-        !this.queries?.has(ReadSheetFilterQuery)) return;
-      key.preventDefault();
-      this.#toggleSheetFilter();
-    }, { capture: true });
+      { capture: true }
+    );
+    this.#disposeDeleteShortcut =
+      this.#keyboardRouter?.subscribe({
+        onDeleteCells: () => {
+          if (!this.#isCellEditing() && this.#getSelectionRange() && this.#commandBus?.has(MoveSheetRangeCommand))
+            this.#deleteCellsDialog.open((mode) => this.#deleteSelectedCells(mode));
+        },
+      }) ?? null;
+    this.#disposeGoToShortcut = this.platform.addEventListener(
+      document,
+      'keydown',
+      (event) => {
+        const key = event as KeyboardEvent;
+        if (
+          key.key !== 'F5' ||
+          key.altKey ||
+          key.ctrlKey ||
+          key.metaKey ||
+          key.shiftKey ||
+          key.defaultPrevented ||
+          this.#isCellEditing() ||
+          !this.#getSelectionRange() ||
+          !this.#commandBus?.has(SelectRangeCommand)
+        )
+          return;
+        key.preventDefault();
+        this.#goToDialog.open(
+          (choice, address) => this.#goToSelection(choice, address),
+          () => focusWebSheetSurface(this.#searCore.renderEngine?.renderContext?.getRoot())
+        );
+      },
+      { capture: true }
+    );
+    this.#disposeHyperlinkShortcut = this.platform.addEventListener(
+      document,
+      'keydown',
+      (event) => {
+        const key = event as KeyboardEvent;
+        if (
+          !(key.metaKey || key.ctrlKey) ||
+          key.altKey ||
+          key.shiftKey ||
+          key.key.toLowerCase() !== 'k' ||
+          key.defaultPrevented ||
+          this.#isCellEditing() ||
+          !this.#getSelectionRange() ||
+          !this.#commandBus?.has(StartFormulaBarEditCommand)
+        )
+          return;
+        key.preventDefault();
+        const [row, column] = this.#getSelectionRange()!.anchor;
+        const cell = this.queries?.has(ReadSheetCellDataQuery)
+          ? this.queries.run(ReadSheetCellDataQuery, void 0).getItem(row, column)
+          : null;
+        const label = String(this.#formulaResults?.getFormulaResult(row, column) ?? cell?.value ?? '');
+        this.#hyperlinkDialog.open(
+          label,
+          (draft) => this.#insertHyperlink(draft),
+          () => focusWebSheetSurface(this.#searCore.renderEngine?.renderContext?.getRoot())
+        );
+      },
+      { capture: true }
+    );
+    this.#disposeFilterShortcut = this.platform.addEventListener(
+      document,
+      'keydown',
+      (event) => {
+        const key = event as KeyboardEvent;
+        if (
+          !(key.metaKey || key.ctrlKey) ||
+          !key.shiftKey ||
+          key.altKey ||
+          key.key.toLowerCase() !== 'l' ||
+          key.defaultPrevented ||
+          this.#isCellEditing() ||
+          !this.#getSelectionRange()
+        )
+          return;
+        if (
+          !this.#commandBus?.has(CreateSheetFilterCommand) ||
+          !this.#commandBus.has(ClearSheetFilterCommand) ||
+          !this.queries?.has(ReadSheetFilterQuery)
+        )
+          return;
+        key.preventDefault();
+        this.#toggleSheetFilter();
+      },
+      { capture: true }
+    );
     this.#bindHistoryStatus();
     this.#bindInlineStyleObservation();
     this.#bindCellFormatStatus();
-    this.#disposeGridStyleShortcut = this.platform.addEventListener(document, 'keydown', (event) => {
-      const key = event as KeyboardEvent;
-      if (!(key.ctrlKey || key.metaKey) || key.altKey || this.#isCellEditing()) return;
-      const styleKey = key.key.toLowerCase() === 'b' ? 'bold'
-        : key.key.toLowerCase() === 'i' ? 'italic'
-        : key.key.toLowerCase() === 'u' ? 'underline'
-        : key.shiftKey && key.key.toLowerCase() === 'x' ? 'strikethrough' : null;
-      if (!styleKey || !this.#commandBus?.has(SetRangeCellTextStyleCommand)) return;
-      key.preventDefault();
-      this.#toggleEmbeddedInlineStyle(styleKey);
-    }, { capture: true });
+    this.#disposeGridStyleShortcut = this.platform.addEventListener(
+      document,
+      'keydown',
+      (event) => {
+        const key = event as KeyboardEvent;
+        if (!(key.ctrlKey || key.metaKey) || key.altKey || this.#isCellEditing()) return;
+        const styleKey =
+          key.key.toLowerCase() === 'b'
+            ? 'bold'
+            : key.key.toLowerCase() === 'i'
+            ? 'italic'
+            : key.key.toLowerCase() === 'u'
+            ? 'underline'
+            : key.shiftKey && key.key.toLowerCase() === 'x'
+            ? 'strikethrough'
+            : null;
+        if (!styleKey || !this.#commandBus?.has(SetRangeCellTextStyleCommand)) return;
+        key.preventDefault();
+        this.#toggleEmbeddedInlineStyle(styleKey);
+      },
+      { capture: true }
+    );
     const sheetSurface = this.#searCore.renderEngine?.renderContext?.getRoot();
     if (sheetSurface instanceof Element) {
       if (this.queries && this.#commandBus) {
         this.#disposeFilterHeaderPointer = bindWebSheetFilterHeader(
-          this.platform, sheetSurface, this.#searCore, this.queries,
+          this.platform,
+          sheetSurface,
+          this.#searCore,
+          this.queries,
           (column) => {
             if (this.#isCellEditing()) return;
             this.#sheetFilterDialog ??= new WebSheetFilterDialog(this.#commandBus!, this.queries!, this.platform);
             this.#sheetFilterDialog.open(column);
-          },
+          }
         );
       }
-      const disposePointer = this.platform.addEventListener(document, 'pointerdown', (event) => {
-        const pointer = event as PointerEvent;
-        this.#contextMenuPriorSelection = pointer.button === 2 && pointer.target instanceof Node &&
-          sheetSurface.contains(pointer.target) ? this.#getSelectionRange() : undefined;
-      }, { capture: true });
-      const disposeMenu = this.platform.addEventListener(sheetSurface, 'contextmenu', (event) =>
-        this.#openSheetContextMenu(sheetSurface, event as MouseEvent),
+      const disposePointer = this.platform.addEventListener(
+        document,
+        'pointerdown',
+        (event) => {
+          const pointer = event as PointerEvent;
+          this.#contextMenuPriorSelection =
+            pointer.button === 2 && pointer.target instanceof Node && sheetSurface.contains(pointer.target)
+              ? this.#getSelectionRange()
+              : undefined;
+        },
+        { capture: true }
       );
-      this.#disposeContextMenu = () => { disposePointer(); disposeMenu(); this.#contextMenuPriorSelection = undefined; };
+      const disposeMenu = this.platform.addEventListener(sheetSurface, 'contextmenu', (event) =>
+        this.#openSheetContextMenu(sheetSurface, event as MouseEvent)
+      );
+      this.#disposeContextMenu = () => {
+        disposePointer();
+        disposeMenu();
+        this.#contextMenuPriorSelection = undefined;
+      };
     }
     if (this.observations?.has(DataValidationWarningObservation)) {
-      this.#disposeDataValidationWarning = this.observations.subscribe(DataValidationWarningObservation, ({ message }) =>
-        this.#showToast(message),
+      this.#disposeDataValidationWarning = this.observations.subscribe(
+        DataValidationWarningObservation,
+        ({ message }) => this.#showToast(message)
       );
     }
     if (this.queries?.has(ReadDataValidationRulesQuery) && this.#commandBus) {
@@ -345,7 +474,7 @@ export class SearWebToolbar extends SearToolbar {
         this.#searCore,
         this.queries,
         () => this.#getSelectionRange(),
-        this.platform,
+        this.platform
       );
       this.#dataValidationFeedback.refresh();
       this.#disposeDataValidationStatus = this.#commandBus.subscribe((event) => {
@@ -458,16 +587,21 @@ export class SearWebToolbar extends SearToolbar {
       this.#handleReplicaSelection.bind(this),
       (label) => this.#canEvaluateDataValidationLabel(label),
       (anchor) => {
-        if (this.queries?.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, void 0) && this.sheetTextInput)
+        if (
+          this.queries?.has(IsCellEditingQuery) &&
+          this.queries.run(IsCellEditingQuery, void 0) &&
+          this.sheetTextInput
+        )
           this.sheetTextInput.refocus();
         else anchor.focus();
-      },
+      }
     );
 
     this.#container.appendChild(root);
     this.#toolbarRoot = root;
     this.#wireCommandBackedControls(root);
-    root.querySelector<HTMLButtonElement>(`[data-testid="${SheetToolbarControlId.CellFill}"]`)
+    root
+      .querySelector<HTMLButtonElement>(`[data-testid="${SheetToolbarControlId.CellFill}"]`)
       ?.addEventListener('click', () => this.#refreshFillPalette());
     const dropdownButton = root.querySelector<HTMLButtonElement>('[data-testid="toolbar-dropdown"]');
     if (
@@ -491,14 +625,14 @@ export class SearWebToolbar extends SearToolbar {
               () => this.#getSelectionRange(),
               this.platform,
               () => this.#getSelectionRanges(),
-              (kind) => this.#canEvaluateDataValidationKind(kind),
+              (kind) => this.#canEvaluateDataValidationKind(kind)
             );
           const existing =
             ruleId &&
             this.queries?.run(ReadDataValidationRulesQuery, undefined).find((entry) => entry.rule.id === ruleId);
           this.#dataValidationDialog?.openCreate(DataValidationKind.Dropdown, existing || undefined);
         },
-        this.sheetTextInput,
+        this.sheetTextInput
       );
     }
     const checkboxButton = root.querySelector<HTMLButtonElement>('[data-testid="toolbar-checkbox"]');
@@ -509,7 +643,7 @@ export class SearWebToolbar extends SearToolbar {
         this.platform,
         this.#commandBus,
         this.queries,
-        () => this.#handleDataValidationSelection('Checkbox'),
+        () => this.#handleDataValidationSelection('Checkbox')
       );
     }
     const eraser = root.querySelector<HTMLButtonElement>('[data-testid="toolbar-eraser"]');
@@ -519,7 +653,7 @@ export class SearWebToolbar extends SearToolbar {
         this.#searCore.renderEngine.renderContext.getRoot(),
         this.platform,
         this.#commandBus,
-        this.queries,
+        this.queries
       );
     }
     const brush = root.querySelector<HTMLButtonElement>('[data-testid="toolbar-brush"]');
@@ -535,7 +669,7 @@ export class SearWebToolbar extends SearToolbar {
         this.platform,
         this.#commandBus,
         this.queries,
-        this.observations,
+        this.observations
       );
     }
   }
@@ -578,7 +712,8 @@ export class SearWebToolbar extends SearToolbar {
         if (!anchor) return;
         this.#cellBorderMenu.open(anchor, (preset, stroke) => {
           this.#getSelectionRanges().forEach((range) =>
-            this.#commandBus?.run(SetRangeCellBorderCommand, { ...range, preset, stroke }));
+            this.#commandBus?.run(SetRangeCellBorderCommand, { ...range, preset, stroke })
+          );
         });
       });
     }
@@ -620,7 +755,7 @@ export class SearWebToolbar extends SearToolbar {
           },
           readSheetFreeze(this.#searCore.getDataEngine()),
           readSheetFixedRows(this.#searCore.getDataEngine()),
-          this.#commandBus,
+          this.#commandBus
         );
       });
     }
@@ -659,7 +794,7 @@ export class SearWebToolbar extends SearToolbar {
           this.queries?.has(ReadDataValidationRulesQuery)) ||
         (this.#commandBus?.has(SetCellInlineStyleCommand.id) &&
           INLINE_STYLE_CONTROLS.some(
-            (control) => (control.kind === 'value' || control.kind === 'palette') && control.testId === id,
+            (control) => (control.kind === 'value' || control.kind === 'palette') && control.testId === id
           ))
       ) {
         return;
@@ -707,7 +842,10 @@ export class SearWebToolbar extends SearToolbar {
           if (!rowSizes || !columnSizes || !(surface instanceof Element)) return null;
           const config = this.#searCore.configEngine.getDefaultConfig();
           const rect = getSheetRangePositionRect([match.row, match.column], [match.row, match.column], {
-            rowSizes, columnSizes, offsetX: config.sheetOffsetX ?? 50, offsetY: config.sheetOffsetY ?? 24,
+            rowSizes,
+            columnSizes,
+            offsetX: config.sheetOffsetX ?? 50,
+            offsetY: config.sheetOffsetY ?? 24,
           });
           if (!rect) return null;
           const bounds = surface.getBoundingClientRect();
@@ -719,7 +857,7 @@ export class SearWebToolbar extends SearToolbar {
           const left = bounds.left + (rect.x - (match.column < freeze.columns ? 0 : scroll.x)) * scaleX;
           const top = bounds.top + (rect.y - (match.row < freeze.rows ? 0 : scroll.y)) * scaleY;
           return { left, right: left + rect.width * scaleX, top, bottom: top + rect.height * scaleY };
-        },
+        }
       );
     }
     this.#findReplaceDialog?.open();
@@ -807,15 +945,20 @@ export class SearWebToolbar extends SearToolbar {
       this.clearConditionalRules();
       return;
     }
-    if (label !== 'View existing rules' && (label === 'New rule' || presets[label]) &&
-      this.#getSelectionRanges().length === 0) {
+    if (
+      label !== 'View existing rules' &&
+      (label === 'New rule' || presets[label]) &&
+      this.#getSelectionRanges().length === 0
+    ) {
       this.#showToast('Select cells first.');
       return;
     }
-    this.#cellHighlightDialog ??= new WebCellHighlightDialog(this.#commandBus, this.queries, () =>
-      this.#getSelectionRange(),
+    this.#cellHighlightDialog ??= new WebCellHighlightDialog(
+      this.#commandBus,
+      this.queries,
+      () => this.#getSelectionRange(),
       () => this.#getSelectionRanges(),
-      (scope, bounds, render) => this.getAdditionalConditionalRules(scope, bounds, render),
+      (scope, bounds, render) => this.getAdditionalConditionalRules(scope, bounds, render)
     );
     if (label === 'View existing rules') this.#cellHighlightDialog.openManage();
     else if (label === 'New rule' || presets[label]) this.#cellHighlightDialog.openCreate(presets[label]);
@@ -826,8 +969,12 @@ export class SearWebToolbar extends SearToolbar {
   }
 
   protected getAdditionalConditionalRules(
-    _scope: 'selection' | 'sheet', _bounds: ConditionalRuleBounds | null, _render: () => void,
-  ): ConditionalRuleListRow[] { return []; }
+    _scope: 'selection' | 'sheet',
+    _bounds: ConditionalRuleBounds | null,
+    _render: () => void
+  ): ConditionalRuleListRow[] {
+    return [];
+  }
 
   #handleDataValidationSelection(label: string): void {
     if (!this.#commandBus || !this.queries) return;
@@ -837,14 +984,14 @@ export class SearWebToolbar extends SearToolbar {
       () => this.#getSelectionRange(),
       this.platform,
       () => this.#getSelectionRanges(),
-      (kind) => this.#canEvaluateDataValidationKind(kind),
+      (kind) => this.#canEvaluateDataValidationKind(kind)
     );
     if (label === 'View all rules') {
       this.#dataValidationDialog.openManage();
       return;
     }
     const kind = (Object.entries(dataValidationKindLabels) as [DataValidationKind, string][]).find(
-      ([, title]) => title === label,
+      ([, title]) => title === label
     )?.[0];
     if (label === 'Custom' || kind) {
       if (this.#getSelectionRanges().length === 0) {
@@ -856,13 +1003,15 @@ export class SearWebToolbar extends SearToolbar {
   }
 
   #canEvaluateDataValidationKind(kind: DataValidationKind): boolean {
-    return !this.queries?.has(CanEvaluateDataValidationKindQuery) ||
-      this.queries.run(CanEvaluateDataValidationKindQuery, kind);
+    return (
+      !this.queries?.has(CanEvaluateDataValidationKindQuery) ||
+      this.queries.run(CanEvaluateDataValidationKindQuery, kind)
+    );
   }
 
   #canEvaluateDataValidationLabel(label: string): boolean {
     const kind = (Object.entries(dataValidationKindLabels) as [DataValidationKind, string][]).find(
-      ([, title]) => title === label,
+      ([, title]) => title === label
     )?.[0];
     return !kind || this.#canEvaluateDataValidationKind(kind);
   }
@@ -892,8 +1041,7 @@ export class SearWebToolbar extends SearToolbar {
     if (!range) return;
     if (label === 'Custom sort') {
       this.#sheetSortDialog ??= new WebSheetSortDialog(this.#commandBus, () => this.sheetTextInput?.startListener());
-      const cells = this.queries?.has(ReadSheetCellDataQuery)
-        ? this.queries.run(ReadSheetCellDataQuery, void 0) : null;
+      const cells = this.queries?.has(ReadSheetCellDataQuery) ? this.queries.run(ReadSheetCellDataQuery, void 0) : null;
       const headerNames = Array.from({ length: range.end[1] - range.start[1] + 1 }, (_, index) => {
         const value = cells?.getItem(range.start[0], range.start[1] + index)?.value;
         return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
@@ -901,7 +1049,15 @@ export class SearWebToolbar extends SearToolbar {
       this.#sheetSortDialog.open(range, selection.anchor[1], headerNames);
       return;
     }
-    if (!['Sort sheet ascending', 'Sort sheet descending', 'Sort selection ascending', 'Sort selection descending'].includes(label)) return;
+    if (
+      ![
+        'Sort sheet ascending',
+        'Sort sheet descending',
+        'Sort selection ascending',
+        'Sort selection descending',
+      ].includes(label)
+    )
+      return;
     const direction = label.endsWith('descending') ? SheetSortDirection.Descending : SheetSortDirection.Ascending;
     const column = Math.max(range.start[1], Math.min(selection.anchor[1], range.end[1]));
     try {
@@ -940,7 +1096,9 @@ export class SearWebToolbar extends SearToolbar {
       const range = this.#getFilterRange(selection);
       if (!range) return;
       const command =
-        label === 'Filter view' || label === 'New filter view' ? CreateSheetFilterViewCommand : CreateSheetFilterCommand;
+        label === 'Filter view' || label === 'New filter view'
+          ? CreateSheetFilterViewCommand
+          : CreateSheetFilterCommand;
       this.#commandBus.run(command, {
         range,
         firstRowIsHeader: range.start[0] < range.end[0],
@@ -960,16 +1118,23 @@ export class SearWebToolbar extends SearToolbar {
     }
     const selection = this.#getSelectionRange();
     const range = selection && this.#getFilterRange(selection);
-    if (range) this.#commandBus.run(CreateSheetFilterCommand, {
-      range,
-      firstRowIsHeader: range.start[0] < range.end[0],
-    });
+    if (range)
+      this.#commandBus.run(CreateSheetFilterCommand, {
+        range,
+        firstRowIsHeader: range.start[0] < range.end[0],
+      });
   }
 
   #getFilterRange(selection: SheetRangeInput): { start: [number, number]; end: [number, number] } | null {
     const selectedRange = {
-      start: [Math.min(selection.anchor[0], selection.focus[0]), Math.min(selection.anchor[1], selection.focus[1])] as [number, number],
-      end: [Math.max(selection.anchor[0], selection.focus[0]), Math.max(selection.anchor[1], selection.focus[1])] as [number, number],
+      start: [Math.min(selection.anchor[0], selection.focus[0]), Math.min(selection.anchor[1], selection.focus[1])] as [
+        number,
+        number
+      ],
+      end: [Math.max(selection.anchor[0], selection.focus[0]), Math.max(selection.anchor[1], selection.focus[1])] as [
+        number,
+        number
+      ],
     };
     return selectedRange.start[0] === selectedRange.end[0] && selectedRange.start[1] === selectedRange.end[1]
       ? this.#getAdjacentDataRange(selection.anchor)
@@ -1014,7 +1179,7 @@ export class SearWebToolbar extends SearToolbar {
       (state) => {
         this.#inlineStyleState = state;
         this.#refreshInlineStyleState();
-      },
+      }
     );
   }
 
@@ -1033,21 +1198,30 @@ export class SearWebToolbar extends SearToolbar {
   }
 
   #readGridInlineStyleState(): SheetEmbeddedInlineStyleState {
-    if (!this.#commandBus?.has(SetRangeCellTextStyleCommand) || !this.queries?.has(ReadSheetCellDataQuery)
-      || !this.#embeddedEditor.formatting) return DISABLED_INLINE_STYLE_STATE;
+    if (
+      !this.#commandBus?.has(SetRangeCellTextStyleCommand) ||
+      !this.queries?.has(ReadSheetCellDataQuery) ||
+      !this.#embeddedEditor.formatting
+    )
+      return DISABLED_INLINE_STYLE_STATE;
     const range = this.#getSelectionRange();
     if (!range) return DISABLED_INLINE_STYLE_STATE;
     const cell = this.queries.run(ReadSheetCellDataQuery, void 0).getItem(...range.anchor);
     if (!cell || (cell.type !== CellType.String && cell.type !== CellType.RichText)) return DISABLED_INLINE_STYLE_STATE;
-    const doc = typeof cell.value === 'string' ? stringToRichDoc(cell.value)
-      : Array.isArray(cell.value) ? cell.value : null;
+    const doc =
+      typeof cell.value === 'string' ? stringToRichDoc(cell.value) : Array.isArray(cell.value) ? cell.value : null;
     if (!doc) return DISABLED_INLINE_STYLE_STATE;
     const values = this.#embeddedEditor.formatting.capture(doc);
-    return Object.fromEntries(INLINE_STYLE_CONTROLS.map(({ styleKey }) => [styleKey, {
-      enabled: true,
-      active: values[styleKey] === true,
-      value: values[styleKey] ?? null,
-    }]));
+    return Object.fromEntries(
+      INLINE_STYLE_CONTROLS.map(({ styleKey }) => [
+        styleKey,
+        {
+          enabled: true,
+          active: values[styleKey] === true,
+          value: values[styleKey] ?? null,
+        },
+      ])
+    );
   }
 
   #applyInlineStyleState(state: SheetEmbeddedInlineStyleState): void {
@@ -1067,12 +1241,14 @@ export class SearWebToolbar extends SearToolbar {
 
   #updateInlineStyleValue(
     control: Extract<SheetInlineStyleControl, { readonly kind: 'value' }>,
-    status: SheetEmbeddedInlineStyleState[string],
+    status: SheetEmbeddedInlineStyleState[string]
   ): void {
     const select = this.#toolbarRoot?.querySelector<HTMLButtonElement>(`[data-testid="${control.testId}"]`);
     if (!select) return;
-    const enabled = (this.#commandBus?.has(SetCellInlineStyleCommand.id) === true ||
-      this.#commandBus?.has(SetRangeCellTextStyleCommand) === true) && status.enabled;
+    const enabled =
+      (this.#commandBus?.has(SetCellInlineStyleCommand.id) === true ||
+        this.#commandBus?.has(SetRangeCellTextStyleCommand) === true) &&
+      status.enabled;
     select.disabled = !enabled;
     select.classList.toggle('disabled', !enabled);
     const value = select.querySelector<HTMLElement>('.wd3-select-normal-value, .wd3-select-input-value');
@@ -1082,8 +1258,10 @@ export class SearWebToolbar extends SearToolbar {
   #updateInlineStyleButton(testId: string, status: SheetEmbeddedInlineStyleState[string]): void {
     const button = this.#toolbarRoot?.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`);
     if (!button) return;
-    const enabled = (this.#commandBus?.has(SetCellInlineStyleCommand.id) === true ||
-      this.#commandBus?.has(SetRangeCellTextStyleCommand) === true) && status.enabled;
+    const enabled =
+      (this.#commandBus?.has(SetCellInlineStyleCommand.id) === true ||
+        this.#commandBus?.has(SetRangeCellTextStyleCommand) === true) &&
+      status.enabled;
     button.disabled = !enabled;
     button.classList.toggle('disabled', !enabled);
     button.classList.toggle('wd3-toolbar-item-active', enabled && status.active);
@@ -1093,8 +1271,10 @@ export class SearWebToolbar extends SearToolbar {
   #updateInlineStylePalette(testId: string, status: SheetEmbeddedInlineStyleState[string]): void {
     const button = this.#toolbarRoot?.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`);
     if (!button) return;
-    const enabled = (this.#commandBus?.has(SetCellInlineStyleCommand.id) === true ||
-      this.#commandBus?.has(SetRangeCellTextStyleCommand) === true) && status.enabled;
+    const enabled =
+      (this.#commandBus?.has(SetCellInlineStyleCommand.id) === true ||
+        this.#commandBus?.has(SetRangeCellTextStyleCommand) === true) &&
+      status.enabled;
     button.disabled = !enabled;
     button.classList.toggle('disabled', !enabled);
     button.classList.toggle('wd3-toolbar-item-active', enabled && status.value !== null);
@@ -1113,7 +1293,7 @@ export class SearWebToolbar extends SearToolbar {
         (state) => {
           this.#editHistoryState = state;
           this.#updateHistoryControls(this.#history?.getStatus() ?? { canUndo: false, canRedo: false });
-        },
+        }
       );
     }
     this.#updateHistoryControls(this.#history?.getStatus() ?? { canUndo: false, canRedo: false });
@@ -1123,7 +1303,12 @@ export class SearWebToolbar extends SearToolbar {
   #runHistoryAction(action: 'undo' | 'redo'): void {
     if (this.#editHistoryState?.editing) {
       if (this.#commandBus?.has(HandleDocumentInputCommand)) {
-        this.#commandBus.run(HandleDocumentInputCommand, { kind: 'keyDown', key: 'z', metaKey: true, shiftKey: action === 'redo' });
+        this.#commandBus.run(HandleDocumentInputCommand, {
+          kind: 'keyDown',
+          key: 'z',
+          metaKey: true,
+          shiftKey: action === 'redo',
+        });
       }
       return;
     }
@@ -1150,20 +1335,26 @@ export class SearWebToolbar extends SearToolbar {
     const dataEngine = this.#searCore.getDataEngine();
     const horizontal = readSheetCellAlignments(dataEngine);
     const vertical = readSheetCellVerticalAlignments(dataEngine);
-    const horizontalValue = horizontal && this.#commandBus?.has(SetRangeAlignmentCommand)
-      ? readUniformAlignment(horizontal, ranges, SheetHorizontalAlignment.Left) : null;
-    const verticalValue = vertical && this.#commandBus?.has(SetRangeVerticalAlignmentCommand)
-      ? readUniformAlignment(vertical, ranges, SheetVerticalAlignment.Center) : null;
+    const horizontalValue =
+      horizontal && this.#commandBus?.has(SetRangeAlignmentCommand)
+        ? readUniformAlignment(horizontal, ranges, SheetHorizontalAlignment.Left)
+        : null;
+    const verticalValue =
+      vertical && this.#commandBus?.has(SetRangeVerticalAlignmentCommand)
+        ? readUniformAlignment(vertical, ranges, SheetVerticalAlignment.Center)
+        : null;
     for (const [testId, value] of [
       ['toolbar-leftAlign', SheetHorizontalAlignment.Left],
       ['toolbar-centerAlign', SheetHorizontalAlignment.Center],
       ['toolbar-rightAlign', SheetHorizontalAlignment.Right],
-    ] as const) this.#updateAlignmentButton(testId, horizontalValue === value);
+    ] as const)
+      this.#updateAlignmentButton(testId, horizontalValue === value);
     for (const [testId, value] of [
       ['toolbar-alignTop', SheetVerticalAlignment.Top],
       ['toolbar-alignCenter', SheetVerticalAlignment.Center],
       ['toolbar-alignBottom', SheetVerticalAlignment.Bottom],
-    ] as const) this.#updateAlignmentButton(testId, verticalValue === value);
+    ] as const)
+      this.#updateAlignmentButton(testId, verticalValue === value);
   }
 
   #updateAlignmentButton(testId: string, selected: boolean): void {
@@ -1184,8 +1375,10 @@ export class SearWebToolbar extends SearToolbar {
     if (!enabled) return;
     const range = this.#getSelectionRange();
     if (!range) return;
-    const format = this.queries!.run(ReadSheetCellFormatQuery, void 0).getItem(range.anchor[0], range.anchor[1])
-      ?? this.#formulaResults?.getFormulaResultFormat?.(range.anchor[0], range.anchor[1]) ?? null;
+    const format =
+      this.queries!.run(ReadSheetCellFormatQuery, void 0).getItem(range.anchor[0], range.anchor[1]) ??
+      this.#formulaResults?.getFormulaResultFormat?.(range.anchor[0], range.anchor[1]) ??
+      null;
     const value = control.querySelector<HTMLElement>('.wd3-select-normal-value');
     if (value) value.textContent = CellNumberFormatMenu.describe(format);
   }
@@ -1193,8 +1386,14 @@ export class SearWebToolbar extends SearToolbar {
   #updateHistoryControls(status: SheetHistoryStatus): void {
     const editing = this.#editHistoryState?.editing === true;
     const available = this.#commandBus?.has(HandleDocumentInputCommand) === true;
-    this.#setHistoryControlEnabled('toolbar-undo', editing ? available && this.#editHistoryState!.canUndo : status.canUndo);
-    this.#setHistoryControlEnabled('toolbar-redo', editing ? available && this.#editHistoryState!.canRedo : status.canRedo);
+    this.#setHistoryControlEnabled(
+      'toolbar-undo',
+      editing ? available && this.#editHistoryState!.canUndo : status.canUndo
+    );
+    this.#setHistoryControlEnabled(
+      'toolbar-redo',
+      editing ? available && this.#editHistoryState!.canRedo : status.canRedo
+    );
   }
 
   #setHistoryControlEnabled(testId: string, enabled: boolean): void {
@@ -1223,7 +1422,8 @@ export class SearWebToolbar extends SearToolbar {
   #getSelectionRanges(): { anchor: [number, number]; focus: [number, number] }[] {
     if (this.queries?.has(GetSelections))
       return this.queries.run(GetSelections, void 0).map((range) => ({
-        anchor: [...range.start], focus: [...range.end],
+        anchor: [...range.start],
+        focus: [...range.end],
       }));
     const current = this.#getSelectionRange();
     return current ? [current] : [];
@@ -1257,7 +1457,8 @@ export class SearWebToolbar extends SearToolbar {
     if (heading) heading.textContent = mixed ? 'Fill color (mixed)' : 'Fill color';
     palette.querySelectorAll<HTMLButtonElement>('.sear-toolbar-color-swatch').forEach((swatch) => {
       const color = swatch.dataset['colorValue'];
-      const selected = !mixed && (value === null ? color === 'transparent' : color?.toLowerCase() === value.toLowerCase());
+      const selected =
+        !mixed && (value === null ? color === 'transparent' : color?.toLowerCase() === value.toLowerCase());
       swatch.classList.toggle('sear-toolbar-color-swatch-selected', selected);
       swatch.setAttribute('aria-pressed', String(selected));
     });
@@ -1270,7 +1471,8 @@ export class SearWebToolbar extends SearToolbar {
   async #copy(): Promise<void> {
     if (!this.#commandBus) return;
     const selectedText = this.queries?.has(ReadSelectedCellEditTextQuery)
-      ? this.queries.run(ReadSelectedCellEditTextQuery, void 0) : null;
+      ? this.queries.run(ReadSelectedCellEditTextQuery, void 0)
+      : null;
     if (selectedText !== null && selectedText !== undefined) {
       if (!selectedText) return;
       try {
@@ -1309,57 +1511,106 @@ export class SearWebToolbar extends SearToolbar {
     const isColumnHeader = y < headerY;
     const isRowHeader = x < headerX;
     const hitRow = hit?.startRowIndex;
-    const row = isColumnHeader ? 0 : Math.max(0, Math.min(rows.shape[1] - 1,
-      Number.isSafeInteger(hitRow) ? Number(hitRow) : rows.getRightBoundaryColIndexByDimension(scroll.y + y - headerY)));
+    const row = isColumnHeader
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            rows.shape[1] - 1,
+            Number.isSafeInteger(hitRow)
+              ? Number(hitRow)
+              : rows.getRightBoundaryColIndexByDimension(scroll.y + y - headerY)
+          )
+        );
     const hitCol = hit?.startColIndex;
-    const col = isRowHeader ? 0 : Math.max(0, Math.min(columns.shape[1] - 1,
-      Number.isSafeInteger(hitCol) ? Number(hitCol) : columns.getRightBoundaryColIndexByDimension(scroll.x + x - headerX)));
-    const existing = this.#contextMenuPriorSelection === undefined
-      ? this.#getSelectionRange() : this.#contextMenuPriorSelection;
+    const col = isRowHeader
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            columns.shape[1] - 1,
+            Number.isSafeInteger(hitCol)
+              ? Number(hitCol)
+              : columns.getRightBoundaryColIndexByDimension(scroll.x + x - headerX)
+          )
+        );
+    const existing =
+      this.#contextMenuPriorSelection === undefined ? this.#getSelectionRange() : this.#contextMenuPriorSelection;
     this.#contextMenuPriorSelection = undefined;
-    const withinSelection = existing && row >= existing.anchor[0] && row <= existing.focus[0] &&
+    const withinSelection =
+      existing &&
+      row >= existing.anchor[0] &&
+      row <= existing.focus[0] &&
       (isColumnHeader
-        ? existing.anchor[0] === 0 && existing.focus[0] === rows.shape[1] - 1 &&
-          col >= existing.anchor[1] && col <= existing.focus[1]
+        ? existing.anchor[0] === 0 &&
+          existing.focus[0] === rows.shape[1] - 1 &&
+          col >= existing.anchor[1] &&
+          col <= existing.focus[1]
         : isRowHeader
         ? existing.anchor[1] === 0 && existing.focus[1] === columns.shape[1] - 1
         : col >= existing.anchor[1] && col <= existing.focus[1]);
     const anchor: [number, number] = withinSelection ? existing.anchor : [row, col];
-    const focus: [number, number] = withinSelection ? existing.focus : [
-      isColumnHeader ? rows.shape[1] - 1 : row,
-      isRowHeader ? columns.shape[1] - 1 : col,
-    ];
+    const focus: [number, number] = withinSelection
+      ? existing.focus
+      : [isColumnHeader ? rows.shape[1] - 1 : row, isRowHeader ? columns.shape[1] - 1 : col];
     event.preventDefault();
     if (!withinSelection) this.#commandBus.run(SelectRangeCommand, { anchor, focus });
     const actions: SheetContextAction[] = [];
-    if (this.#commandBus.has(CopyRangeCommand)) actions.push({ label: 'Copy', run: () => { void this.#copy(); } });
-    if (this.#commandBus.has(CutRangeCommand)) actions.push({ label: 'Cut', run: () => { void this.#cut(); } });
-    if (this.#commandBus.has(PasteRangeCommand)) actions.push({ label: 'Paste', run: () => { void this.#paste(); } });
-    if (this.#commandBus.has(ClearRangeContentsCommand)) actions.push({
-      label: 'Clear contents',
-      run: () => {
-        if (this.queries?.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, void 0)) {
-          if (!this.#commandBus?.has(CancelCellEditCommand)) return;
-          this.#commandBus.run(CancelCellEditCommand, void 0);
-          if (this.queries.run(IsCellEditingQuery, void 0)) return;
-        }
-        this.#commandBus?.run(ClearRangeContentsCommand, { anchor, focus });
-      },
-    });
+    if (this.#commandBus.has(CopyRangeCommand))
+      actions.push({
+        label: 'Copy',
+        run: () => {
+          void this.#copy();
+        },
+      });
+    if (this.#commandBus.has(CutRangeCommand))
+      actions.push({
+        label: 'Cut',
+        run: () => {
+          void this.#cut();
+        },
+      });
+    if (this.#commandBus.has(PasteRangeCommand))
+      actions.push({
+        label: 'Paste',
+        run: () => {
+          void this.#paste();
+        },
+      });
+    if (this.#commandBus.has(ClearRangeContentsCommand))
+      actions.push({
+        label: 'Clear contents',
+        run: () => {
+          if (this.queries?.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, void 0)) {
+            if (!this.#commandBus?.has(CancelCellEditCommand)) return;
+            this.#commandBus.run(CancelCellEditCommand, void 0);
+            if (this.queries.run(IsCellEditingQuery, void 0)) return;
+          }
+          this.#commandBus?.run(ClearRangeContentsCommand, { anchor, focus });
+        },
+      });
     if (isRowHeader) {
-      if (this.#commandBus.has(InsertRowCommand)) actions.push({
-        label: 'Insert rows above', run: () => this.#commandBus?.run(InsertRowCommand, { index: anchor[0], count: focus[0] - anchor[0] + 1 }),
-      });
-      if (this.#commandBus.has(DeleteRowCommand)) actions.push({
-        label: 'Delete rows', run: () => this.#commandBus?.run(DeleteRowCommand, { index: anchor[0], count: focus[0] - anchor[0] + 1 }),
-      });
+      if (this.#commandBus.has(InsertRowCommand))
+        actions.push({
+          label: 'Insert rows above',
+          run: () => this.#commandBus?.run(InsertRowCommand, { index: anchor[0], count: focus[0] - anchor[0] + 1 }),
+        });
+      if (this.#commandBus.has(DeleteRowCommand))
+        actions.push({
+          label: 'Delete rows',
+          run: () => this.#commandBus?.run(DeleteRowCommand, { index: anchor[0], count: focus[0] - anchor[0] + 1 }),
+        });
     } else if (isColumnHeader) {
-      if (this.#commandBus.has(InsertColumnCommand)) actions.push({
-        label: 'Insert columns left', run: () => this.#commandBus?.run(InsertColumnCommand, { index: anchor[1], count: focus[1] - anchor[1] + 1 }),
-      });
-      if (this.#commandBus.has(DeleteColumnCommand)) actions.push({
-        label: 'Delete columns', run: () => this.#commandBus?.run(DeleteColumnCommand, { index: anchor[1], count: focus[1] - anchor[1] + 1 }),
-      });
+      if (this.#commandBus.has(InsertColumnCommand))
+        actions.push({
+          label: 'Insert columns left',
+          run: () => this.#commandBus?.run(InsertColumnCommand, { index: anchor[1], count: focus[1] - anchor[1] + 1 }),
+        });
+      if (this.#commandBus.has(DeleteColumnCommand))
+        actions.push({
+          label: 'Delete columns',
+          run: () => this.#commandBus?.run(DeleteColumnCommand, { index: anchor[1], count: focus[1] - anchor[1] + 1 }),
+        });
     } else if (this.#commandBus.has(SetRangeCellFormatCommand)) {
       actions.push({ label: 'Format cells', run: () => this.#openCellFormatDialog() });
     }
@@ -1369,7 +1620,8 @@ export class SearWebToolbar extends SearToolbar {
   async #cut(): Promise<void> {
     if (!this.#commandBus) return;
     const selectedText = this.queries?.has(ReadSelectedCellEditTextQuery)
-      ? this.queries.run(ReadSelectedCellEditTextQuery, void 0) : null;
+      ? this.queries.run(ReadSelectedCellEditTextQuery, void 0)
+      : null;
     if (selectedText !== null && selectedText !== undefined) {
       if (!selectedText) return;
       try {
@@ -1394,15 +1646,15 @@ export class SearWebToolbar extends SearToolbar {
 
   async #paste(): Promise<void> {
     if (!this.#commandBus) return;
-    const editingAtStart = this.queries?.has(IsCellEditingQuery) &&
-      this.queries.run(IsCellEditingQuery, void 0);
+    const editingAtStart = this.queries?.has(IsCellEditingQuery) && this.queries.run(IsCellEditingQuery, void 0);
     try {
       const payload = await this.#clipboard.read();
       if (editingAtStart) {
-        if (payload?.plainText) this.#commandBus.run(HandleDocumentInputCommand, {
-          kind: TextInputKind.Text,
-          text: payload.plainText,
-        });
+        if (payload?.plainText)
+          this.#commandBus.run(HandleDocumentInputCommand, {
+            kind: TextInputKind.Text,
+            text: payload.plainText,
+          });
         return;
       }
       if (payload) {
@@ -1423,8 +1675,13 @@ export class SearWebToolbar extends SearToolbar {
           typeof columnCount === 'number' &&
           typeof columnLimit === 'number' &&
           target[1] + columnCount > columnLimit;
-        this.#showToast(exceedsColumns ? 'Paste range exceeds the sheet column limit.' : 'Paste range exceeds the sheet bounds.');
-      } else if (error instanceof SheetClipboardError && error.code === SheetClipboardErrorCode.TargetIntersectsMergedCells) {
+        this.#showToast(
+          exceedsColumns ? 'Paste range exceeds the sheet column limit.' : 'Paste range exceeds the sheet bounds.'
+        );
+      } else if (
+        error instanceof SheetClipboardError &&
+        error.code === SheetClipboardErrorCode.TargetIntersectsMergedCells
+      ) {
         this.#showToast('Paste range includes merged cells; hidden content was not written.');
       } else if (error instanceof SheetClipboardError && error.code === SheetClipboardErrorCode.InputRejected) {
         this.#showToast(error.message);
@@ -1444,7 +1701,9 @@ export class SearWebToolbar extends SearToolbar {
 
   #setVerticalAlignment(verticalAlignment: SheetVerticalAlignment): void {
     if (!this.#commandBus) return;
-    this.#getSelectionRanges().forEach((range) => this.#commandBus!.run(SetRangeVerticalAlignmentCommand, { ...range, verticalAlignment }));
+    this.#getSelectionRanges().forEach((range) =>
+      this.#commandBus!.run(SetRangeVerticalAlignmentCommand, { ...range, verticalAlignment })
+    );
   }
 
   #setCellFormat(format: CellFormat | null): void {
@@ -1458,7 +1717,9 @@ export class SearWebToolbar extends SearToolbar {
   #adjustCellFormatDecimalPlaces(delta: number): void {
     if (!this.#commandBus?.has(AdjustRangeCellFormatDecimalPlacesCommand.id)) return;
     if (!this.#commitEditBeforeToolbarAction()) return;
-    this.#getSelectionRanges().forEach((range) => this.#commandBus!.run(AdjustRangeCellFormatDecimalPlacesCommand, { ...range, delta }));
+    this.#getSelectionRanges().forEach((range) =>
+      this.#commandBus!.run(AdjustRangeCellFormatDecimalPlacesCommand, { ...range, delta })
+    );
   }
 
   #commitEditBeforeToolbarAction(): boolean {
@@ -1514,10 +1775,16 @@ export class SearWebToolbar extends SearToolbar {
       <div class="sear-toolbar-duplicate-title">Remove duplicates</div>
       <label class="sear-toolbar-duplicate-row"><input type="checkbox" data-role="header-row">Exclude header row</label>
       <label class="sear-toolbar-duplicate-row">Keep per group
-        <select data-role="keep" aria-label="Duplicate to keep"><option value="${SheetDuplicateKeepMode.First}">First</option><option value="${SheetDuplicateKeepMode.Last}">Last</option></select>
+        <select data-role="keep" aria-label="Duplicate to keep"><option value="${
+          SheetDuplicateKeepMode.First
+        }">First</option><option value="${SheetDuplicateKeepMode.Last}">Last</option></select>
       </label>
       <div class="sear-toolbar-duplicate-columns"></div>
-      ${hasOutsideData ? '<label class="sear-toolbar-duplicate-row"><input type="checkbox" data-role="delete-whole-rows">Delete entire rows, including data outside the selection</label>' : ''}
+      ${
+        hasOutsideData
+          ? '<label class="sear-toolbar-duplicate-row"><input type="checkbox" data-role="delete-whole-rows">Delete entire rows, including data outside the selection</label>'
+          : ''
+      }
       <div class="sear-toolbar-duplicate-actions">
         <button type="button" data-role="cancel">Cancel</button>
         <button type="button" data-role="confirm">OK</button>
@@ -1525,10 +1792,9 @@ export class SearWebToolbar extends SearToolbar {
     const list = panel.querySelector<HTMLElement>('.sear-toolbar-duplicate-columns');
     list?.appendChild(createDuplicateColumnCheckbox('Select all', 'all', true));
     columns.forEach((column) =>
-      list?.appendChild(createDuplicateColumnCheckbox(`Column ${columnLabel(column)}`, String(column), true)),
+      list?.appendChild(createDuplicateColumnCheckbox(`Column ${columnLabel(column)}`, String(column), true))
     );
-    const cells = this.queries?.has(ReadSheetCellDataQuery)
-      ? this.queries.run(ReadSheetCellDataQuery, void 0) : null;
+    const cells = this.queries?.has(ReadSheetCellDataQuery) ? this.queries.run(ReadSheetCellDataQuery, void 0) : null;
     const headerRow = Math.min(range.anchor[0], range.focus[0]);
     const headerNames = columns.map((column) => {
       const value = cells?.getItem(headerRow, column)?.value;
@@ -1540,8 +1806,8 @@ export class SearWebToolbar extends SearToolbar {
         const item = list?.querySelector<HTMLInputElement>(`[data-column="${column}"]`)?.parentElement;
         if (!item?.lastChild) return;
         const label = `Column ${columnLabel(column)}`;
-        item.lastChild.textContent = headerRowInput?.checked && headerNames[index]
-          ? `${label}（${headerNames[index]}）` : label;
+        item.lastChild.textContent =
+          headerRowInput?.checked && headerNames[index] ? `${label}（${headerNames[index]}）` : label;
       });
     };
     headerRowInput?.addEventListener('change', updateColumnLabels);
@@ -1549,7 +1815,9 @@ export class SearWebToolbar extends SearToolbar {
     const confirmButton = panel.querySelector<HTMLButtonElement>('[data-role="confirm"]');
     if (wholeRowsInput && confirmButton) {
       confirmButton.disabled = true;
-      wholeRowsInput.addEventListener('change', () => { confirmButton.disabled = !wholeRowsInput.checked; });
+      wholeRowsInput.addEventListener('change', () => {
+        confirmButton.disabled = !wholeRowsInput.checked;
+      });
     }
     root.appendChild(panel);
 
@@ -1570,15 +1838,17 @@ export class SearWebToolbar extends SearToolbar {
     });
     const allColumns = panel.querySelector<HTMLInputElement>('[data-column="all"]');
     const columnInputs = Array.from(panel.querySelectorAll<HTMLInputElement>('[data-column]:not([data-column="all"])'));
-    columnInputs.forEach((input) => input.addEventListener('change', () => {
-      if (!allColumns) return;
-      const selected = columnInputs.filter((column) => column.checked).length;
-      allColumns.checked = selected === columnInputs.length;
-      allColumns.indeterminate = selected > 0 && selected < columnInputs.length;
-    }));
+    columnInputs.forEach((input) =>
+      input.addEventListener('change', () => {
+        if (!allColumns) return;
+        const selected = columnInputs.filter((column) => column.checked).length;
+        allColumns.checked = selected === columnInputs.length;
+        allColumns.indeterminate = selected > 0 && selected < columnInputs.length;
+      })
+    );
     panel.querySelector<HTMLElement>('[data-role="confirm"]')?.addEventListener('click', () => {
       const selectedColumns = Array.from(
-        panel.querySelectorAll<HTMLInputElement>('[data-column]:not([data-column="all"])'),
+        panel.querySelectorAll<HTMLInputElement>('[data-column]:not([data-column="all"])')
       )
         .filter((input) => input.checked)
         .map((input) => Number(input.dataset['column']));
@@ -1612,40 +1882,47 @@ export class SearWebToolbar extends SearToolbar {
     if (!range || !this.queries?.has(ReadSheetCellFormatQuery)) return;
     const [row, column] = range.anchor;
     const currentFormat = this.queries.run(ReadSheetCellFormatQuery, void 0).getItem(row, column);
-    const sampleValue = this.#formulaResults?.getFormulaResult(row, column) ?? (
-      this.queries.has(ReadSheetCellDataQuery)
+    const sampleValue =
+      this.#formulaResults?.getFormulaResult(row, column) ??
+      (this.queries.has(ReadSheetCellDataQuery)
         ? this.queries.run(ReadSheetCellDataQuery, void 0).getItem(row, column)?.value
-        : void 0
-    );
+        : void 0);
     this.#refreshCellFormatStatus();
     const textState = full ? this.#readGridInlineStyleState() : null;
-    const currentTextStyle = textState ? Object.fromEntries(
-      Object.entries(textState).map(([key, status]) => [key, status.value]),
-    ) : undefined;
+    const currentTextStyle = textState
+      ? Object.fromEntries(Object.entries(textState).map(([key, status]) => [key, status.value]))
+      : undefined;
     this.#cellNumberFormatDialog.open({
       currentFormat,
       sampleValue,
       onApply: (format) => this.#setCellFormat(format),
-      sections: full ? {
-        currentAlignment: readSheetCellAlignments(this.#searCore.getDataEngine())?.getItem(row, column),
-        currentVerticalAlignment: readSheetCellVerticalAlignments(this.#searCore.getDataEngine())?.getItem(row, column),
-        currentFill: readSheetCellFills(this.#searCore.getDataEngine())?.getItem(row, column),
-        currentTextStyle,
-        textStyleEnabled: textState?.['bold']?.enabled === true,
-        onApplyAlignment: (value) => this.#setAlignment(value),
-        onApplyVerticalAlignment: (value) => this.#setVerticalAlignment(value),
-        onApplyTextStyle: (attrs) => this.#setEmbeddedInlineStyle(attrs),
-        onApplyBorder: (preset: SheetBorderPreset, stroke: SheetBorderStroke) => {
-          if (!this.#commandBus?.has(SetRangeCellBorderCommand)) return;
-          this.#getSelectionRanges().forEach((selection) =>
-            this.#commandBus!.run(SetRangeCellBorderCommand, { ...selection, preset, stroke }));
-        },
-        onApplyFill: (fill) => {
-          if (!this.#commandBus?.has(SetRangeCellFillCommand)) return;
-          this.#getSelectionRanges().forEach((selection) =>
-            this.#commandBus!.run(SetRangeCellFillCommand, { ...selection, fill: fill as SheetCellFill | null }));
-        },
-      } : undefined,
+      sections: full
+        ? {
+            currentAlignment: readSheetCellAlignments(this.#searCore.getDataEngine())?.getItem(row, column),
+            currentVerticalAlignment: readSheetCellVerticalAlignments(this.#searCore.getDataEngine())?.getItem(
+              row,
+              column
+            ),
+            currentFill: readSheetCellFills(this.#searCore.getDataEngine())?.getItem(row, column),
+            currentTextStyle,
+            textStyleEnabled: textState?.['bold']?.enabled === true,
+            onApplyAlignment: (value) => this.#setAlignment(value),
+            onApplyVerticalAlignment: (value) => this.#setVerticalAlignment(value),
+            onApplyTextStyle: (attrs) => this.#setEmbeddedInlineStyle(attrs),
+            onApplyBorder: (preset: SheetBorderPreset, stroke: SheetBorderStroke) => {
+              if (!this.#commandBus?.has(SetRangeCellBorderCommand)) return;
+              this.#getSelectionRanges().forEach((selection) =>
+                this.#commandBus!.run(SetRangeCellBorderCommand, { ...selection, preset, stroke })
+              );
+            },
+            onApplyFill: (fill) => {
+              if (!this.#commandBus?.has(SetRangeCellFillCommand)) return;
+              this.#getSelectionRanges().forEach((selection) =>
+                this.#commandBus!.run(SetRangeCellFillCommand, { ...selection, fill: fill as SheetCellFill | null })
+              );
+            },
+          }
+        : undefined,
     });
   }
 
@@ -1695,8 +1972,8 @@ export class SearWebToolbar extends SearToolbar {
     if (!data || !selection || !this.#commandBus) return 'Sheet unavailable';
     if (choice === 'address') {
       const range = parseAddress(address, data.shape);
-      if (!range || [...range.anchor, ...range.focus].some((value, axis) =>
-        value < 0 || value >= data.shape[axis % 2])) return 'Enter a valid cell or range reference.';
+      if (!range || [...range.anchor, ...range.focus].some((value, axis) => value < 0 || value >= data.shape[axis % 2]))
+        return 'Enter a valid cell or range reference.';
       this.#commandBus.run(SelectRangeCommand, { ...range, ensureVisible: true });
       return null;
     }
@@ -1712,14 +1989,25 @@ export class SearWebToolbar extends SearToolbar {
 
     const points: [number, number][] = [];
     if (choice === 'blanks') {
-      const start = [Math.min(selection.anchor[0], selection.focus[0]), Math.min(selection.anchor[1], selection.focus[1])];
-      const end = [Math.max(selection.anchor[0], selection.focus[0]), Math.max(selection.anchor[1], selection.focus[1])];
+      const start = [
+        Math.min(selection.anchor[0], selection.focus[0]),
+        Math.min(selection.anchor[1], selection.focus[1]),
+      ];
+      const end = [
+        Math.max(selection.anchor[0], selection.focus[0]),
+        Math.max(selection.anchor[1], selection.focus[1]),
+      ];
       if (start[0] === end[0] && start[1] === end[1]) {
-        let maxRow = start[0]; let maxColumn = start[1];
+        let maxRow = start[0];
+        let maxColumn = start[1];
         data.forEachStored((value, row, column) => {
-          if (value != null) { maxRow = Math.max(maxRow, row); maxColumn = Math.max(maxColumn, column); }
+          if (value != null) {
+            maxRow = Math.max(maxRow, row);
+            maxColumn = Math.max(maxColumn, column);
+          }
         });
-        end[0] = maxRow; end[1] = maxColumn;
+        end[0] = maxRow;
+        end[1] = maxColumn;
       }
       if ((end[0] - start[0] + 1) * (end[1] - start[1] + 1) > 10_000)
         return 'The blank-cell search range is too large. Select a smaller range.';
@@ -1728,32 +2016,44 @@ export class SearWebToolbar extends SearToolbar {
           if (data.getItem(row, column) == null) points.push([row, column]);
     } else {
       data.forEachStored((value, row, column) => {
-        if (value != null && value.type !== CellType.Empty &&
-          (choice === 'formulas') === (value.type === CellType.Formula)) points.push([row, column]);
+        if (
+          value != null &&
+          value.type !== CellType.Empty &&
+          (choice === 'formulas') === (value.type === CellType.Formula)
+        )
+          points.push([row, column]);
       });
     }
     if (!points.length) return 'No matching cells found.';
     if (points.length > 2_000) return 'Too many matches. Narrow the sheet range.';
-    points.forEach(([row, column], index) => this.#commandBus!.run(SelectRangeCommand, {
-      anchor: [row, column], focus: [row, column],
-      additionalSelectionMode: index === 0 ? SheetAdditionalSelectionMode.Clear : SheetAdditionalSelectionMode.AppendCurrent,
-      ensureVisible: index === 0,
-    }));
+    points.forEach(([row, column], index) =>
+      this.#commandBus!.run(SelectRangeCommand, {
+        anchor: [row, column],
+        focus: [row, column],
+        additionalSelectionMode:
+          index === 0 ? SheetAdditionalSelectionMode.Clear : SheetAdditionalSelectionMode.AppendCurrent,
+        ensureVisible: index === 0,
+      })
+    );
     return null;
   }
 
   #insertHyperlink(draft: SheetHyperlinkDraft): string | null {
-    if (!this.#commandBus?.has(StartFormulaBarEditCommand) ||
-      !this.#commandBus.has(SetFormulaBarDraftCommand) || !this.#commandBus.has(CommitCellEditCommand))
+    if (
+      !this.#commandBus?.has(StartFormulaBarEditCommand) ||
+      !this.#commandBus.has(SetFormulaBarDraftCommand) ||
+      !this.#commandBus.has(CommitCellEditCommand)
+    )
       return 'A hyperlink cannot be inserted in the current cell.';
     if (draft.kind === 'web') {
       try {
         const url = new URL(draft.target);
         if (url.protocol !== 'http:' && url.protocol !== 'https:') return 'Enter a valid web address.';
-      } catch { return 'Enter a valid web address.'; }
+      } catch {
+        return 'Enter a valid web address.';
+      }
     } else if (draft.kind === 'workbook') {
-      if (!/^#(?:(?:'[^']+'|[^!#]+)!)?[A-Z]+[1-9]\d*$/.test(draft.target))
-        return 'Enter a valid sheet and cell.';
+      if (!/^#(?:(?:'[^']+'|[^!#]+)!)?[A-Z]+[1-9]\d*$/.test(draft.target)) return 'Enter a valid sheet and cell.';
     } else if (!/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+(?:\?subject=.*)?$/.test(draft.target)) {
       return 'Enter a valid email address.';
     }
@@ -1761,7 +2061,9 @@ export class SearWebToolbar extends SearToolbar {
     const formula = `=HYPERLINK("${escape(draft.target)}","${escape(draft.label || draft.target)}")`;
     this.#commandBus.run(StartFormulaBarEditCommand, void 0);
     this.#commandBus.run(SetFormulaBarDraftCommand, {
-      text: formula, selectionStart: formula.length, selectionEnd: formula.length,
+      text: formula,
+      selectionStart: formula.length,
+      selectionEnd: formula.length,
     });
     this.#commandBus.run(CommitCellEditCommand, void 0);
     return null;
@@ -1786,7 +2088,8 @@ export class SearWebToolbar extends SearToolbar {
         }
         const confirmed = await this.#userInteraction.confirm({
           title: 'Merge cells',
-          message: 'Merging keeps only the top-leftmost nonempty cell value in the range. Other values will be cleared. Merge anyway?',
+          message:
+            'Merging keeps only the top-leftmost nonempty cell value in the range. Other values will be cleared. Merge anyway?',
           confirmLabel: 'Merge',
           cancelLabel: 'Cancel',
         });
@@ -1811,7 +2114,7 @@ export class SearWebToolbar extends SearToolbar {
 function readUniformAlignment(
   matrix: AlignmentMatrix | VerticalAlignmentMatrix,
   ranges: readonly { readonly anchor: readonly [number, number]; readonly focus: readonly [number, number] }[],
-  defaultValue: string,
+  defaultValue: string
 ): string | null {
   let cells = 0;
   let overrides = 0;
@@ -1851,7 +2154,7 @@ const INLINE_STYLE_CONTROLS = [
   { kind: 'palette', testId: 'font-color', styleKey: 'color' },
 ] as const satisfies readonly SheetInlineStyleControl[];
 const DISABLED_INLINE_STYLE_STATE: SheetEmbeddedInlineStyleState = Object.fromEntries(
-  INLINE_STYLE_CONTROLS.map(({ styleKey }) => [styleKey, DISABLED_INLINE_STYLE_STATUS]),
+  INLINE_STYLE_CONTROLS.map(({ styleKey }) => [styleKey, DISABLED_INLINE_STYLE_STATUS])
 );
 
 function createDuplicateColumnCheckbox(label: string, column: string, checked: boolean): HTMLElement {

@@ -24,8 +24,8 @@
   },
   "dependencies": {
     "@searsuite/sear-assembly-commands": "workspace:*",
+    "@searsuite/sear-assembly-doc": "workspace:*",
     "@searsuite/sear-assembly-setup": "workspace:*",
-    "@searsuite/sear-foundation-subscription": "workspace:*",
     "@searsuite/sear-plugin-web-toolbar": "workspace:*"
   },
   "exports": {

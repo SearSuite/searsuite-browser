@@ -1,7 +1,5 @@
+import { DocInlineStyleObservation, type DocEditor, type DocInlineStyleState } from '@searsuite/sear-assembly-setup';
 import {
-  DocInlineStyleObservation,
-  type DocEditor,
-  type DocInlineStyleState,
   InsertDocTableCommand,
   RedoDocCommand,
   SetDocBoldCommand,
@@ -15,7 +13,7 @@ import {
   ToggleDocUnderlineCommand,
   ToggleDocStrikethroughCommand,
   UndoDocCommand,
-} from '@searsuite/sear-assembly-setup';
+} from '@searsuite/sear-assembly-doc';
 import { DocCommandBus } from '@searsuite/sear-assembly-commands';
 import { ObservationRegistry } from '@searsuite/sear-foundation-subscription';
 import { SearWebDocToolbar } from '../src';
@@ -29,7 +27,7 @@ describe('SearWebDocToolbar', () => {
   function createCommands(registered: readonly string[]): jest.Mocked<DocCommandBus> {
     return {
       has: jest.fn((definition: { id: string } | string) =>
-        registered.includes(typeof definition === 'string' ? definition : definition.id),
+        registered.includes(typeof definition === 'string' ? definition : definition.id)
       ),
       run: jest.fn(),
     } as unknown as jest.Mocked<DocCommandBus>;
@@ -37,14 +35,14 @@ describe('SearWebDocToolbar', () => {
 
   function createEditor(
     commands: DocCommandBus,
-    state: DocInlineStyleState = enabledInlineStyles(),
+    state: DocInlineStyleState = enabledInlineStyles()
   ): Pick<DocEditor, 'commands' | 'observations'> {
     return createObservableEditor(commands, state).editor;
   }
 
   function createObservableEditor(
     commands: DocCommandBus,
-    initialState: DocInlineStyleState = enabledInlineStyles(),
+    initialState: DocInlineStyleState = enabledInlineStyles()
   ): {
     editor: Pick<DocEditor, 'commands' | 'observations'>;
     publish(state: DocInlineStyleState): void;
@@ -271,7 +269,7 @@ describe('SearWebDocToolbar', () => {
         italic: { enabled: false, active: false, value: null },
         underline: { enabled: false, active: false, value: null },
         strikethrough: { enabled: false, active: false, value: null },
-      },
+      }
     );
     const target = document.createElement('div');
     document.body.appendChild(target);

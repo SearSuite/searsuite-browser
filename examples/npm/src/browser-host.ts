@@ -1,4 +1,4 @@
-import type { SheetEditorAdapters } from '@searsuite/sear-assembly-setup';
+import type { SheetEditorAdapters } from "@searsuite/sear-assembly-setup";
 import {
   BrowserPlatform,
   WebCanvasRenderContext,
@@ -9,21 +9,27 @@ import {
   WebScroller,
   WebSocketTransport,
   WebTextInput,
-} from '@searsuite/sear-browser-adapters';
+} from "@searsuite/sear-browser-adapters";
 import {
   SearWebToolbar,
   WebFormulaBar,
   WebSheetAdapterDefaults,
-} from '@searsuite/sear-plugin-web-toolbar';
-import { Scroller } from '@searsuite/sear-render-scroll';
+} from "@searsuite/sear-plugin-web-toolbar";
+import { Scroller } from "@searsuite/sear-render-scroll";
 
-// This helper belongs to the application. All imported APIs exist in npm 0.0.1.
-export function createBrowserAdapters(canvas: HTMLCanvasElement): SheetEditorAdapters {
+// This helper belongs to the application and supplies its selected browser adapters.
+export function createBrowserAdapters(
+  canvas: HTMLCanvasElement
+): SheetEditorAdapters {
   return {
     ...WebSheetAdapterDefaults,
     platform: BrowserPlatform,
     createRenderContexts() {
-      const context = new WebCanvasRenderContext(canvas, false, new BrowserPlatform());
+      const context = new WebCanvasRenderContext(
+        canvas,
+        false,
+        new BrowserPlatform()
+      );
       return {
         renderContext: context,
         offScreenRenderContext: context.cloneNode(),
@@ -41,8 +47,14 @@ export function createBrowserAdapters(canvas: HTMLCanvasElement): SheetEditorAda
     formulaBar: WebFormulaBar,
     registerEnvironment(container) {
       container.registerInstance(Scroller.ContainerSymbol, canvas);
-      container.registerInstance(WebKeyboardRouter.eventTargetSymbol, canvas.ownerDocument);
-      container.registerInstance(WebPointerCapture.eventTargetSymbol, canvas.ownerDocument);
+      container.registerInstance(
+        WebKeyboardRouter.eventTargetSymbol,
+        canvas.ownerDocument
+      );
+      container.registerInstance(
+        WebPointerCapture.eventTargetSymbol,
+        canvas.ownerDocument
+      );
     },
   };
 }

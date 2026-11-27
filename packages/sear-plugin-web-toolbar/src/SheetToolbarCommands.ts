@@ -27,15 +27,15 @@ import {
   SheetResizePlugin,
   type SheetResizeDimensionCommandDataSource,
 } from '@searsuite/sear-plugin-resize';
+import { SheetDataPlugin } from '@searsuite/sear-plugin-sheet-data';
 import {
   readDenseColumn,
   readDenseRow,
   readSheetDataMatrix,
   readSheetRawRowSizes,
-  SheetDataPlugin,
   type SheetMatrix,
   type CellMatrixElement,
-} from '@searsuite/sear-render-engine';
+} from '@searsuite/sear-domain-sheet';
 
 const resizeCommands: readonly SheetCommandDefinition<unknown>[] = [
   ResizeSheetRowsCommand,
@@ -68,7 +68,7 @@ export function ensureSheetToolbarCommands(commands: SheetCommandBus, core: Sear
     function registerMissingSheetStructureCommands() {
       registerSheetStructureCommands(commands, createToolbarStructureCommandDataSource(core));
     },
-    'Sheet structure command registry is only partially registered.',
+    'Sheet structure command registry is only partially registered.'
   );
   ensureCommandGroup(
     commands,
@@ -76,7 +76,7 @@ export function ensureSheetToolbarCommands(commands: SheetCommandBus, core: Sear
     function registerMissingSheetResizeCommands() {
       registerSheetResizeDimensionCommands(commands, createToolbarResizeCommandDataSource(core));
     },
-    'Sheet resize command registry is only partially registered.',
+    'Sheet resize command registry is only partially registered.'
   );
   ensureCommandGroup(
     commands,
@@ -84,7 +84,7 @@ export function ensureSheetToolbarCommands(commands: SheetCommandBus, core: Sear
     function registerMissingSheetRangeCommands() {
       registerSheetToolbarCommands(commands, core);
     },
-    'Sheet range command registry is only partially registered.',
+    'Sheet range command registry is only partially registered.'
   );
 }
 
@@ -92,7 +92,7 @@ function ensureCommandGroup(
   commands: SheetCommandBus,
   definitions: readonly SheetCommandDefinition<unknown>[],
   register: () => void,
-  partialMessage: string,
+  partialMessage: string
 ): void {
   const registeredCount = definitions.filter((definition) => commands.has(definition)).length;
   if (registeredCount === definitions.length) return;
@@ -152,7 +152,7 @@ function readDimensionDefault(matrix: { getDefaultValue?: () => number | undefin
 }
 
 function createToolbarStructureCommandDataSource(
-  core: SearCoreSheet,
+  core: SearCoreSheet
 ): SheetStructureCommandDataSource<CellMatrixElement> {
   return {
     target: SheetDataPlugin.pluginKey,
@@ -190,7 +190,7 @@ function readRequiredColumnSizes(core: SearCoreSheet): NonNullable<ReturnType<ty
 }
 
 function readRequiredRowHiddenOriginalSizes(
-  core: SearCoreSheet,
+  core: SearCoreSheet
 ): NonNullable<ReturnType<typeof readSheetRowHiddenOriginalSizes>> {
   const rowHiddenOriginalSizes = readSheetRowHiddenOriginalSizes(core.getDataEngine());
   if (!rowHiddenOriginalSizes) throw new SearError('Sheet toolbar resize command cannot read hidden row sizes.');
@@ -198,7 +198,7 @@ function readRequiredRowHiddenOriginalSizes(
 }
 
 function readRequiredColumnHiddenOriginalSizes(
-  core: SearCoreSheet,
+  core: SearCoreSheet
 ): NonNullable<ReturnType<typeof readSheetColumnHiddenOriginalSizes>> {
   const columnHiddenOriginalSizes = readSheetColumnHiddenOriginalSizes(core.getDataEngine());
   if (!columnHiddenOriginalSizes) throw new SearError('Sheet toolbar resize command cannot read hidden column sizes.');

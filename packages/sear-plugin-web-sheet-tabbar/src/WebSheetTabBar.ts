@@ -77,6 +77,13 @@ export class WebSheetTabBar extends SheetTabBarAdapter<HTMLElement> {
 
     const tabs = document.createElement('div');
     tabs.className = 'sear-sheet-bottom-bar__tabs';
+    tabs.addEventListener('wheel', (event) => {
+      if (!event.deltaX || Math.abs(event.deltaY) > Math.abs(event.deltaX)) return;
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? tabs.clientWidth : 1;
+      const previous = tabs.scrollLeft;
+      tabs.scrollLeft = Math.max(0, Math.min(tabs.scrollWidth - tabs.clientWidth, previous + event.deltaX * unit));
+      if (tabs.scrollLeft !== previous) event.preventDefault();
+    }, { passive: false });
 
     model.sheets.forEach((sheet) => {
       const tab = document.createElement('button');

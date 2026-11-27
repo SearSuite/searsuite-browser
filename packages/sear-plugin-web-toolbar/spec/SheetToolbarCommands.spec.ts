@@ -1,4 +1,5 @@
-import { type Pipeline, type SearCoreSheet } from '@searsuite/sear-assembly-core';
+import { type SearCoreSheet } from '@searsuite/sear-assembly-core';
+import { type Pipeline } from '@searsuite/sear-assembly-plugin';
 import {
   ClearRangeContentsCommand,
   DeleteColumnCommand,
@@ -15,7 +16,8 @@ import {
   ToggleMergeCellsCommand,
   UnmergeCellsCommand,
 } from '@searsuite/sear-plugin-cell-merge';
-import { SheetDataFieldNamespace, SheetDataMatrixFieldKey, SheetDataPlugin } from '@searsuite/sear-render-engine';
+import { SheetDataPlugin } from '@searsuite/sear-plugin-sheet-data';
+import { SheetDataFieldNamespace, SheetDataMatrixFieldKey } from '@searsuite/sear-domain-sheet';
 import {
   AlignmentMatrix,
   SetRangeAlignmentCommand,
@@ -75,7 +77,7 @@ function createMatrix<T>(shape: [number, number], values = new Map<string, T>())
 describe('SheetToolbarCommands', () => {
   it('keeps toolbar exports limited to command registration adapters', () => {
     expect([toolbarExports.ensureSheetToolbarCommands, toolbarExports.registerSheetToolbarCommands]).not.toContain(
-      void 0,
+      void 0
     );
     expect([
       (toolbarExports as Record<string, unknown>)['ClearRangeContentsCommand'],
@@ -108,7 +110,7 @@ describe('SheetToolbarCommands', () => {
         ResizeSheetRowsCommand,
         UnhideSheetColumnsCommand,
         UnhideSheetRowsCommand,
-      ].map(({ id }) => id),
+      ].map(({ id }) => id)
     ).toEqual([
       'sheet.hideColumns',
       'sheet.hideRows',
@@ -137,7 +139,7 @@ describe('SheetToolbarCommands', () => {
         MergeCellsCommand,
         ToggleMergeCellsCommand,
         UnmergeCellsCommand,
-      ].map(({ id }) => id),
+      ].map(({ id }) => id)
     ).toEqual([
       'range.clearContents',
       'range.setAlignment',
@@ -153,7 +155,7 @@ describe('SheetToolbarCommands', () => {
     const commands = new SheetCommandBus();
     commands.register(
       ClearRangeContentsCommand,
-      (input) => new TransactionPipelineCommand(ClearRangeContentsCommand.id, { operations: [], input } as never),
+      (input) => new TransactionPipelineCommand(ClearRangeContentsCommand.id, { operations: [], input } as never)
     );
 
     expect(() => ensureSheetToolbarCommands(commands, {} as SearCoreSheet)).not.toThrow();
@@ -166,7 +168,7 @@ describe('SheetToolbarCommands', () => {
       new Map([
         ['0:0', { type: 'text', value: 'A1' }],
         ['1:1', { type: 'text', value: 'B2' }],
-      ]),
+      ])
     );
     const cellAlignments = new AlignmentMatrix(void 0, [3, 3]);
     cellAlignments.addItem(0, 0, SheetHorizontalAlignment.Right);
@@ -182,7 +184,7 @@ describe('SheetToolbarCommands', () => {
       {
         target: SheetDataPlugin.pluginKey,
         readCell: (row, column) => sheetData.getItem(row, column),
-      },
+      }
     );
     const core = {
       getDataEngine: () => ({

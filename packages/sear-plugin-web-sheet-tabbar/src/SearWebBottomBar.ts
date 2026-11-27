@@ -1,22 +1,21 @@
 import { Injectable, Inject } from '@searsuite/sear-foundation-di';
 import { Platform } from '@searsuite/sear-foundation-platform';
+import { WorkbookActiveSheetEditorObservation, type WorkbookEditor } from '@searsuite/sear-assembly-workbook-kernel';
 import {
   AddWorkbookSheetCommand,
   ActivateWorkbookSheetCommand,
   RemoveWorkbookSheetCommand,
   MoveWorkbookSheetCommand,
   RenameWorkbookSheetCommand,
-  WorkbookActiveSheetEditorObservation,
-  WorkbookDocumentStateObservation,
-  type WorkbookEditor,
-} from '@searsuite/sear-assembly-workbook';
-import { type SheetDocumentState } from '@searsuite/sear-assembly-setup';
+} from '@searsuite/sear-assembly-workbook-kernel';
+import { WorkbookDocumentStateObservation } from '@searsuite/sear-assembly-workbook-kernel';
+import { type SheetDocumentState } from '@searsuite/sear-assembly-sheet-state';
 import { WorkbookError, WorkbookErrorCode } from '@searsuite/sear-domain-workbook';
 import { CommandExecutionPhase } from '@searsuite/sear-foundation-common';
 import { GetSelection, SelectRangeCommand } from '@searsuite/sear-plugin-selection';
 import { IsCellEditingQuery } from '@searsuite/sear-plugin-cell-editor';
-import { ReadSheetZoomQuery, SetSheetZoomCommand, SheetZoomObservation } from '@searsuite/sear-plugin-zoom';
-import { ReadSheetCellDataQuery } from '@searsuite/sear-render-engine';
+import { ReadSheetZoomQuery, SetSheetZoomCommand, SheetZoomObservation } from '@searsuite/sear-render';
+import { ReadSheetCellDataQuery } from '@searsuite/sear-domain-sheet';
 import { SHEET_BOTTOM_BAR_CSS } from './SheetBottomBarCSS';
 import { SheetBottomBarAdapter } from './SheetBottomBarAdapter';
 import { SheetStatusBarAdapter } from './SheetStatusBarAdapter';
@@ -162,7 +161,7 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     const workbook = this.#options.workbook?.editor;
     if (!workbook) return;
     this.#unsubscribeWorkbookState = workbook.observations.subscribe(WorkbookDocumentStateObservation, () =>
-      this.#render(),
+      this.#render()
     );
     this.#unsubscribeActiveSheet = workbook.observations.subscribe(WorkbookActiveSheetEditorObservation, () => {
       this.#bindZoomObservation();
@@ -286,7 +285,7 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
           if (error instanceof WorkbookError) {
             if (error.code === WorkbookErrorCode.duplicateSheetName) return 'A sheet with this name already exists.';
             if (error.code === WorkbookErrorCode.invalidSheetName) {
-              return "Invalid sheet name: avoid : \\ / ? * [ ], use at most 31 characters, and do not start or end with an apostrophe.";
+              return 'Invalid sheet name: avoid : \\ / ? * [ ], use at most 31 characters, and do not start or end with an apostrophe.';
             }
           }
           throw error;
@@ -334,7 +333,7 @@ export class SearWebBottomBar extends SheetBottomBarAdapter<HTMLElement, SearWeb
     const sheet = {
       id: nextSheetId(
         state.sheets.map((candidate) => candidate.id),
-        ordinal,
+        ordinal
       ),
       name: `Sheet${ordinal}`,
     };
@@ -412,7 +411,7 @@ function nextSheetOrdinal(existingNames: readonly string[]): number {
     existingNames
       .map((name) => /^Sheet(\d+)$/.exec(name)?.[1])
       .filter((ordinal): ordinal is string => ordinal !== void 0)
-      .map((ordinal) => Number.parseInt(ordinal, 10)),
+      .map((ordinal) => Number.parseInt(ordinal, 10))
   );
   let ordinal = 1;
   while (used.has(ordinal)) ordinal += 1;

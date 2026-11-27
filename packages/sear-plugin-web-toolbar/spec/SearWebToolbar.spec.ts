@@ -31,9 +31,21 @@ import {
   SheetClipboardErrorCode,
   type SheetClipboard,
 } from '@searsuite/sear-plugin-clipboard';
-import { Pipeline } from '@searsuite/sear-assembly-core';
-import { CommitCellEditCommand, HandleDocumentInputCommand, IsCellEditingQuery, SetCellInlineStyleCommand, SetRangeCellTextStyleCommand, type SheetInlineStyleCommandInput } from '@searsuite/sear-plugin-cell-editor';
-import { CellFillMatrix, SetRangeCellFillCommand, SheetCellFillFieldKey, type SheetSetRangeCellFillInput } from '@searsuite/sear-plugin-cell-fill';
+import { Pipeline } from '@searsuite/sear-assembly-plugin';
+import {
+  CommitCellEditCommand,
+  HandleDocumentInputCommand,
+  IsCellEditingQuery,
+  SetCellInlineStyleCommand,
+  SetRangeCellTextStyleCommand,
+  type SheetInlineStyleCommandInput,
+} from '@searsuite/sear-plugin-cell-editor';
+import {
+  CellFillMatrix,
+  SetRangeCellFillCommand,
+  SheetCellFillFieldKey,
+  type SheetSetRangeCellFillInput,
+} from '@searsuite/sear-plugin-cell-fill';
 import {
   SetRangeCellBorderCommand,
   SheetBorderLineStyle,
@@ -61,7 +73,12 @@ import {
   SheetHistoryStatusProvider,
   UndoSheetCommand,
 } from '@searsuite/sear-plugin-history';
-import { GetSelection, GetSelections, SelectRangeCommand, SheetSelectionPlugin } from '@searsuite/sear-plugin-selection';
+import {
+  GetSelection,
+  GetSelections,
+  SelectRangeCommand,
+  SheetSelectionPlugin,
+} from '@searsuite/sear-plugin-selection';
 import {
   AlignmentMatrix,
   SheetAlignmentPlugin,
@@ -70,7 +87,8 @@ import {
   SheetVerticalAlignmentFieldKey,
   VerticalAlignmentMatrix,
 } from '@searsuite/sear-plugin-alignment';
-import { ReadSheetCellDataQuery, SheetDataFieldNamespace, SheetDataMatrixFieldKey, SheetDataPlugin } from '@searsuite/sear-render-engine';
+import { SheetDataPlugin } from '@searsuite/sear-plugin-sheet-data';
+import { ReadSheetCellDataQuery, SheetDataFieldNamespace, SheetDataMatrixFieldKey } from '@searsuite/sear-domain-sheet';
 import {
   SheetColumnHiddenOriginalSizesFieldKey,
   SheetColumnSizesFieldKey,
@@ -124,7 +142,7 @@ function createToolbar(
   userInteraction: UserInteractionService = {
     confirm: async () => true,
     destroy: () => void 0,
-  },
+  }
 ): SearWebToolbar {
   return new SearWebToolbar(
     core,
@@ -134,7 +152,7 @@ function createToolbar(
     userInteraction,
     commands,
     history,
-    queries,
+    queries
   );
 }
 
@@ -181,8 +199,14 @@ describe('SearWebToolbar', () => {
       write: jest.fn(async () => void 0),
     };
     const toolbar = new SearWebToolbar(
-      core, platform, new FakeSheetEmbeddedEditor(), clipboard,
-      { confirm: async () => true, destroy: () => void 0 }, commands, void 0, queries,
+      core,
+      platform,
+      new FakeSheetEmbeddedEditor(),
+      clipboard,
+      { confirm: async () => true, destroy: () => void 0 },
+      commands,
+      void 0,
+      queries
     );
     const host = document.createElement('div');
     document.body.appendChild(host);
@@ -190,9 +214,13 @@ describe('SearWebToolbar', () => {
     const run = jest.spyOn(commands, 'run');
 
     host.querySelector<HTMLButtonElement>('[data-testid="toolbar-copy"]')?.click();
-    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe('Copying noncontiguous selections is not supported.');
+    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe(
+      'Copying noncontiguous selections is not supported.'
+    );
     host.querySelector<HTMLButtonElement>('[data-testid="toolbar-cut"]')?.click();
-    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe('Cutting noncontiguous selections is not supported.');
+    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe(
+      'Cutting noncontiguous selections is not supported.'
+    );
     expect(run).not.toHaveBeenCalled();
     expect(clipboard.write).not.toHaveBeenCalled();
     toolbar.destroy();
@@ -223,7 +251,7 @@ describe('SearWebToolbar', () => {
         confirm: async () => true,
         destroy: () => void 0,
       },
-      commands,
+      commands
     );
     const host = document.createElement('div');
     document.body.appendChild(host);
@@ -233,7 +261,9 @@ describe('SearWebToolbar', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe('Paste range exceeds the sheet column limit.');
+    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe(
+      'Paste range exceeds the sheet column limit.'
+    );
     expect(await clipboard.read()).toEqual(payload);
     expect(clipboard.write).not.toHaveBeenCalled();
     expect(platform.warn).toHaveBeenCalledWith('Toolbar clipboard paste failed.', expect.any(SheetClipboardError));
@@ -252,12 +282,16 @@ describe('SearWebToolbar', () => {
     commands.register(PasteRangeCommand, () => {
       throw new SheetClipboardError(
         SheetClipboardErrorCode.TargetIntersectsMergedCells,
-        'Paste would write into a hidden merged cell.',
+        'Paste would write into a hidden merged cell.'
       );
     });
     const toolbar = new SearWebToolbar(
-      core, platform, new FakeSheetEmbeddedEditor(), clipboard,
-      { confirm: async () => true, destroy: () => void 0 }, commands,
+      core,
+      platform,
+      new FakeSheetEmbeddedEditor(),
+      clipboard,
+      { confirm: async () => true, destroy: () => void 0 },
+      commands
     );
     const host = document.createElement('div');
     document.body.appendChild(host);
@@ -267,7 +301,9 @@ describe('SearWebToolbar', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe('Paste range includes merged cells; hidden content was not written.');
+    expect(document.querySelector('.sear-toolbar__toast')?.textContent).toBe(
+      'Paste range includes merged cells; hidden content was not written.'
+    );
     expect(await clipboard.read()).toEqual(payload);
     toolbar.destroy();
   });
@@ -307,7 +343,9 @@ describe('SearWebToolbar', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     toolbar.mount(host);
-    const binding = platform.addEventListener.mock.calls.find(([target, type]) => target === surface && type === 'contextmenu');
+    const binding = platform.addEventListener.mock.calls.find(
+      ([target, type]) => target === surface && type === 'contextmenu'
+    );
     expect(binding).toBeDefined();
     const event = new MouseEvent('contextmenu', { clientX: 10, clientY: 50, cancelable: true });
     (binding![2] as (event: Event) => void)(event);
@@ -343,32 +381,50 @@ describe('SearWebToolbar', () => {
     const selected = jest.fn();
     const inserted = jest.fn();
     const deleted = jest.fn();
-    commands.register(SelectRangeCommand, (input) => { selected(input); return new LocalActionCommand(SelectRangeCommand.id, () => {}); });
+    commands.register(SelectRangeCommand, (input) => {
+      selected(input);
+      return new LocalActionCommand(SelectRangeCommand.id, () => {});
+    });
     commands.register(InsertRowCommand, () => new LocalActionCommand(InsertRowCommand.id, () => {}));
     commands.register(DeleteRowCommand, () => new LocalActionCommand(DeleteRowCommand.id, () => {}));
-    commands.register(InsertColumnCommand, (input) => { inserted(input); return new LocalActionCommand(InsertColumnCommand.id, () => {}); });
-    commands.register(DeleteColumnCommand, (input) => { deleted(input); return new LocalActionCommand(DeleteColumnCommand.id, () => {}); });
+    commands.register(InsertColumnCommand, (input) => {
+      inserted(input);
+      return new LocalActionCommand(InsertColumnCommand.id, () => {});
+    });
+    commands.register(DeleteColumnCommand, (input) => {
+      deleted(input);
+      return new LocalActionCommand(DeleteColumnCommand.id, () => {});
+    });
     const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, undefined, queries);
     const host = document.createElement('div');
     document.body.append(host);
     toolbar.mount(host);
     try {
-      const binding = platform.addEventListener.mock.calls.find(([target, type]) => target === surface && type === 'contextmenu')!;
-      const rightClick = (x: number) => (binding[2] as (event: Event) => void)(
-        new MouseEvent('contextmenu', { clientX: x, clientY: 10, cancelable: true }));
+      const binding = platform.addEventListener.mock.calls.find(
+        ([target, type]) => target === surface && type === 'contextmenu'
+      )!;
+      const rightClick = (x: number) =>
+        (binding[2] as (event: Event) => void)(
+          new MouseEvent('contextmenu', { clientX: x, clientY: 10, cancelable: true })
+        );
       rightClick(160);
       expect(selected).not.toHaveBeenCalled();
-      expect(Array.from(document.querySelectorAll('.sear-sheet-context-menu [role="menuitem"]')).map((item) => item.textContent))
-        .toEqual(expect.arrayContaining(['Insert columns left', 'Delete columns']));
+      expect(
+        Array.from(document.querySelectorAll('.sear-sheet-context-menu [role="menuitem"]')).map(
+          (item) => item.textContent
+        )
+      ).toEqual(expect.arrayContaining(['Insert columns left', 'Delete columns']));
       Array.from(document.querySelectorAll<HTMLButtonElement>('.sear-sheet-context-menu [role="menuitem"]'))
-        .find((item) => item.textContent === 'Insert columns left')?.click();
+        .find((item) => item.textContent === 'Insert columns left')
+        ?.click();
       expect(inserted).toHaveBeenCalledWith({ index: 1, count: 2 });
 
       range = { start: [0, 0], end: [2, 0] };
       rightClick(160);
       expect(selected).toHaveBeenLastCalledWith({ anchor: [0, 1], focus: [2, 1] });
       Array.from(document.querySelectorAll<HTMLButtonElement>('.sear-sheet-context-menu [role="menuitem"]'))
-        .find((item) => item.textContent === 'Delete columns')?.click();
+        .find((item) => item.textContent === 'Delete columns')
+        ?.click();
       expect(deleted).toHaveBeenCalledWith({ index: 1, count: 1 });
     } finally {
       toolbar.destroy();
@@ -399,28 +455,45 @@ describe('SearWebToolbar', () => {
     const selected = jest.fn();
     const inserted = jest.fn();
     const cleared = jest.fn();
-    commands.register(SelectRangeCommand, (input) => { selected(input); return new LocalActionCommand(SelectRangeCommand.id, () => {}); });
-    commands.register(InsertRowCommand, (input) => { inserted(input); return new LocalActionCommand(InsertRowCommand.id, () => {}); });
+    commands.register(SelectRangeCommand, (input) => {
+      selected(input);
+      return new LocalActionCommand(SelectRangeCommand.id, () => {});
+    });
+    commands.register(InsertRowCommand, (input) => {
+      inserted(input);
+      return new LocalActionCommand(InsertRowCommand.id, () => {});
+    });
     commands.register(DeleteRowCommand, () => new LocalActionCommand(DeleteRowCommand.id, () => {}));
     commands.register(InsertColumnCommand, () => new LocalActionCommand(InsertColumnCommand.id, () => {}));
     commands.register(DeleteColumnCommand, () => new LocalActionCommand(DeleteColumnCommand.id, () => {}));
-    commands.register(ClearRangeContentsCommand, (input) => { cleared(input); return new LocalActionCommand(ClearRangeContentsCommand.id, () => {}); });
+    commands.register(ClearRangeContentsCommand, (input) => {
+      cleared(input);
+      return new LocalActionCommand(ClearRangeContentsCommand.id, () => {});
+    });
     const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, undefined, queries);
     const host = document.createElement('div');
     document.body.append(host);
     toolbar.mount(host);
     try {
-      const binding = platform.addEventListener.mock.calls.find(([target, type]) => target === surface && type === 'contextmenu')!;
-      (binding[2] as (event: Event) => void)(new MouseEvent('contextmenu', { clientX: 10, clientY: 50, cancelable: true }));
+      const binding = platform.addEventListener.mock.calls.find(
+        ([target, type]) => target === surface && type === 'contextmenu'
+      )!;
+      (binding[2] as (event: Event) => void)(
+        new MouseEvent('contextmenu', { clientX: 10, clientY: 50, cancelable: true })
+      );
       expect(selected).not.toHaveBeenCalled();
       Array.from(document.querySelectorAll<HTMLButtonElement>('.sear-sheet-context-menu [role="menuitem"]'))
-        .find((item) => item.textContent === 'Insert rows above')?.click();
+        .find((item) => item.textContent === 'Insert rows above')
+        ?.click();
       expect(inserted).toHaveBeenCalledWith({ index: 1, count: 2 });
       range = { start: [1, 1], end: [2, 1] };
-      (binding[2] as (event: Event) => void)(new MouseEvent('contextmenu', { clientX: 160, clientY: 50, cancelable: true }));
+      (binding[2] as (event: Event) => void)(
+        new MouseEvent('contextmenu', { clientX: 160, clientY: 50, cancelable: true })
+      );
       expect(selected).not.toHaveBeenCalled();
       Array.from(document.querySelectorAll<HTMLButtonElement>('.sear-sheet-context-menu [role="menuitem"]'))
-        .find((item) => item.textContent === 'Clear contents')?.click();
+        .find((item) => item.textContent === 'Clear contents')
+        ?.click();
       expect(cleared).toHaveBeenCalledWith({ anchor: [1, 1], focus: [2, 1] });
     } finally {
       toolbar.destroy();
@@ -442,22 +515,40 @@ describe('SearWebToolbar', () => {
     columns.getRightBoundaryColIndexByDimension = (position) => Math.floor(position / 80);
     Object.assign(core, {
       configEngine: { getDefaultConfig: () => ({ sheetOffsetX: 50, sheetOffsetY: 24 }) },
-      renderEngine: { renderContext: { getRoot: () => surface }, scrollManager: { getState: () => ({ x: 0, y: 100 }) } },
+      renderEngine: {
+        renderContext: { getRoot: () => surface },
+        scrollManager: { getState: () => ({ x: 0, y: 100 }) },
+      },
       eventEngine: { getNodeAtViewPoint: () => ({ properties: { startRowIndex: 0, startColIndex: 1 } }) },
     });
     const commands = createCommands(core);
     const selected = jest.fn();
-    commands.register(SelectRangeCommand, (input) => { selected(input); return new LocalActionCommand(SelectRangeCommand.id, () => {}); });
-    const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, undefined,
-      createQueries(core, { start: [2, 2], end: [2, 2] }));
+    commands.register(SelectRangeCommand, (input) => {
+      selected(input);
+      return new LocalActionCommand(SelectRangeCommand.id, () => {});
+    });
+    const toolbar = createToolbar(
+      core,
+      platform,
+      new FakeSheetEmbeddedEditor(),
+      commands,
+      undefined,
+      createQueries(core, { start: [2, 2], end: [2, 2] })
+    );
     const host = document.createElement('div');
     document.body.append(host);
     toolbar.mount(host);
     try {
-      const binding = platform.addEventListener.mock.calls.find(([target, type]) => target === surface && type === 'contextmenu')!;
-      (binding[2] as (event: Event) => void)(new MouseEvent('contextmenu', { clientX: 10, clientY: 50, cancelable: true }));
+      const binding = platform.addEventListener.mock.calls.find(
+        ([target, type]) => target === surface && type === 'contextmenu'
+      )!;
+      (binding[2] as (event: Event) => void)(
+        new MouseEvent('contextmenu', { clientX: 10, clientY: 50, cancelable: true })
+      );
       expect(selected).toHaveBeenLastCalledWith(expect.objectContaining({ anchor: [0, 0], focus: [0, 2] }));
-      (binding[2] as (event: Event) => void)(new MouseEvent('contextmenu', { clientX: 160, clientY: 50, cancelable: true }));
+      (binding[2] as (event: Event) => void)(
+        new MouseEvent('contextmenu', { clientX: 160, clientY: 50, cancelable: true })
+      );
       expect(selected).toHaveBeenLastCalledWith(expect.objectContaining({ anchor: [0, 1], focus: [0, 1] }));
     } finally {
       toolbar.destroy();
@@ -493,8 +584,10 @@ describe('SearWebToolbar', () => {
     expect(bold?.disabled).toBe(false);
     bold?.click();
     expect(received).toEqual([{ attrs: { bold: true } }]);
-    const shortcuts = platform.addEventListener.mock.calls.filter(([target, type, , options]) =>
-      target === document && type === 'keydown' && Boolean(options && typeof options === 'object' && options.capture));
+    const shortcuts = platform.addEventListener.mock.calls.filter(
+      ([target, type, , options]) =>
+        target === document && type === 'keydown' && Boolean(options && typeof options === 'object' && options.capture)
+    );
     expect(shortcuts.length).toBeGreaterThan(0);
     const key = new KeyboardEvent('keydown', { key: 'b', metaKey: true, cancelable: true });
     shortcuts.forEach((shortcut) => (shortcut[2] as (event: Event) => void)(key));
@@ -515,20 +608,22 @@ describe('SearWebToolbar', () => {
         if (anchorCell !== null) callback(anchorCell, 0, 0);
         if (otherCell !== null) callback(otherCell, 0, 1);
       }),
-      forEachStoredInRange: jest.fn((
-        startRow: number,
-        startColumn: number,
-        endRow: number,
-        endColumn: number,
-        callback: (cell: unknown, row: number, column: number) => void,
-      ) => {
-        if (startRow <= 0 && endRow >= 0 && startColumn <= 0 && endColumn >= 0 && anchorCell !== null) {
-          callback(anchorCell, 0, 0);
+      forEachStoredInRange: jest.fn(
+        (
+          startRow: number,
+          startColumn: number,
+          endRow: number,
+          endColumn: number,
+          callback: (cell: unknown, row: number, column: number) => void
+        ) => {
+          if (startRow <= 0 && endRow >= 0 && startColumn <= 0 && endColumn >= 0 && anchorCell !== null) {
+            callback(anchorCell, 0, 0);
+          }
+          if (startRow <= 0 && endRow >= 0 && startColumn <= 1 && endColumn >= 1 && otherCell !== null) {
+            callback(otherCell, 0, 1);
+          }
         }
-        if (startRow <= 0 && endRow >= 0 && startColumn <= 1 && endColumn >= 1 && otherCell !== null) {
-          callback(otherCell, 0, 1);
-        }
-      }),
+      ),
     };
     const cellAlignments = new AlignmentMatrix(void 0, [3, 3]);
     const verticalAlignments = new VerticalAlignmentMatrix(void 0, [3, 3]);
@@ -568,7 +663,7 @@ describe('SearWebToolbar', () => {
       {
         target: SheetDataPlugin.pluginKey,
         readCell: (row, column) => sheetData.getItem(row, column),
-      },
+      }
     );
 
     return {
@@ -615,7 +710,7 @@ describe('SearWebToolbar', () => {
     range: { start: readonly [number, number]; end: readonly [number, number] } = {
       start: [0, 0] as const,
       end: [1, 1] as const,
-    },
+    }
   ): SheetQueryRegistry {
     const queries = new SheetQueryRegistry();
     queries.register(GetSelection, () => range);
@@ -745,7 +840,7 @@ describe('SearWebToolbar', () => {
       commands,
       undefined,
       queries,
-      interaction,
+      interaction
     );
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -788,11 +883,11 @@ describe('SearWebToolbar', () => {
     const commands = createCommands(core);
     commands.register(
       UndoSheetCommand,
-      () => new PipelineExecutionCommand(UndoSheetCommand.id, new Pipeline(UndoSheetCommand.id)),
+      () => new PipelineExecutionCommand(UndoSheetCommand.id, new Pipeline(UndoSheetCommand.id))
     );
     commands.register(
       RedoSheetCommand,
-      () => new PipelineExecutionCommand(RedoSheetCommand.id, new Pipeline(RedoSheetCommand.id)),
+      () => new PipelineExecutionCommand(RedoSheetCommand.id, new Pipeline(RedoSheetCommand.id))
     );
     const history = createHistoryProvider();
     const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, history.provider);
@@ -828,13 +923,19 @@ describe('SearWebToolbar', () => {
       inputs.push(input);
       return new LocalActionCommand(HandleDocumentInputCommand.id, () => {});
     });
-    commands.register(UndoSheetCommand, () => new PipelineExecutionCommand(UndoSheetCommand.id, new Pipeline(UndoSheetCommand.id)));
+    commands.register(
+      UndoSheetCommand,
+      () => new PipelineExecutionCommand(UndoSheetCommand.id, new Pipeline(UndoSheetCommand.id))
+    );
     const editor = new FakeSheetEmbeddedEditor();
     let editStatus = { editing: false, canUndo: false, canRedo: false };
     const listeners = new Set<(status: typeof editStatus) => void>();
     editor.observations.register(SheetEmbeddedEditHistoryObservation, {
       getSnapshot: () => editStatus,
-      subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
     });
     const publish = (status: typeof editStatus): void => {
       editStatus = status;
@@ -929,7 +1030,7 @@ describe('SearWebToolbar', () => {
     expect(target.querySelector('.sear-toolbar--command-backed')).toBeNull();
     expect(target.querySelector('[data-testid="toolbar-bold"]')?.classList.contains('disabled')).toBe(true);
     expect(platform.warn).toHaveBeenCalledWith(
-      'SearWebToolbar command-backed actions are unavailable: SheetCommandBus is missing.',
+      'SearWebToolbar command-backed actions are unavailable: SheetCommandBus is missing.'
     );
     toolbar.destroy();
   });
@@ -1102,7 +1203,9 @@ describe('SearWebToolbar', () => {
   it('BUG-618 marks a uniform fill and identifies a mixed selection in the palette', () => {
     const platform = createPlatform();
     const core = createCore();
-    const fills = core.getDataEngine().readDataViewField<CellFillMatrix>(SheetDataFieldNamespace, SheetCellFillFieldKey)!;
+    const fills = core
+      .getDataEngine()
+      .readDataViewField<CellFillMatrix>(SheetDataFieldNamespace, SheetCellFillFieldKey)!;
     for (let row = 0; row < 2; row += 1)
       for (let column = 0; column < 2; column += 1) fills.setItem(row, column, '#ffe8e6');
     const commands = createCommands(core);
@@ -1122,7 +1225,9 @@ describe('SearWebToolbar', () => {
     fills.setItem(1, 1, '#dff7eb');
     fillButton.click();
     expect(document.querySelector('.sear-toolbar-color-title')?.textContent).toContain('mixed');
-    expect(document.querySelector('[data-testid="toolbar-color-fillColor-Light red"]')?.getAttribute('aria-pressed')).toBe('false');
+    expect(
+      document.querySelector('[data-testid="toolbar-color-fillColor-Light red"]')?.getAttribute('aria-pressed')
+    ).toBe('false');
     expect(document.querySelectorAll('.sear-toolbar-color-swatch-selected')).toHaveLength(0);
     toolbar.destroy();
   });
@@ -1130,8 +1235,12 @@ describe('SearWebToolbar', () => {
   it('BUG-619 reflects selected horizontal and vertical alignment and clears mixed states', () => {
     const platform = createPlatform();
     const core = createCore();
-    const horizontal = core.getDataEngine().readDataViewField<AlignmentMatrix>(SheetDataFieldNamespace, SheetHorizontalAlignmentFieldKey)!;
-    const vertical = core.getDataEngine().readDataViewField<VerticalAlignmentMatrix>(SheetDataFieldNamespace, SheetVerticalAlignmentFieldKey)!;
+    const horizontal = core
+      .getDataEngine()
+      .readDataViewField<AlignmentMatrix>(SheetDataFieldNamespace, SheetHorizontalAlignmentFieldKey)!;
+    const vertical = core
+      .getDataEngine()
+      .readDataViewField<VerticalAlignmentMatrix>(SheetDataFieldNamespace, SheetVerticalAlignmentFieldKey)!;
     const commands = createCommands(core);
     const queries = createQueries(core, { start: [0, 0], end: [0, 0] });
     horizontal.addItem(0, 0, 'center');
@@ -1155,7 +1264,14 @@ describe('SearWebToolbar', () => {
 
     const mixedQueries = createQueries(core, { start: [0, 0], end: [0, 1] });
     toolbar.destroy();
-    const mixedToolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, undefined, mixedQueries);
+    const mixedToolbar = createToolbar(
+      core,
+      platform,
+      new FakeSheetEmbeddedEditor(),
+      commands,
+      undefined,
+      mixedQueries
+    );
     mixedToolbar.mount(target);
     expect(target.querySelectorAll('[data-testid*="Align"][aria-pressed="true"]')).toHaveLength(0);
     mixedToolbar.destroy();
@@ -1178,7 +1294,7 @@ describe('SearWebToolbar', () => {
     });
     commands.register(
       DeleteDuplicateRowsCommand,
-      () => new LocalActionCommand(DeleteDuplicateRowsCommand.id, () => void 0),
+      () => new LocalActionCommand(DeleteDuplicateRowsCommand.id, () => void 0)
     );
     const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, undefined, queries);
     const target = document.createElement('div');
@@ -1191,7 +1307,9 @@ describe('SearWebToolbar', () => {
     duplicate?.click();
     document.querySelector<HTMLElement>('[data-testid="toolbar-menu-item-duplicate-Highlight duplicates"]')?.click();
     duplicate?.click();
-    document.querySelector<HTMLElement>('[data-testid="toolbar-menu-item-duplicate-Clear duplicate highlighting"]')?.click();
+    document
+      .querySelector<HTMLElement>('[data-testid="toolbar-menu-item-duplicate-Clear duplicate highlighting"]')
+      ?.click();
 
     expect(highlightInputs).toEqual([
       {
@@ -1212,15 +1330,15 @@ describe('SearWebToolbar', () => {
     const queries = createQueries(core, { start: [0, 0] as const, end: [1, 1] as const });
     commands.register(
       HighlightDuplicateRowsCommand,
-      () => new LocalActionCommand(HighlightDuplicateRowsCommand.id, () => void 0),
+      () => new LocalActionCommand(HighlightDuplicateRowsCommand.id, () => void 0)
     );
     commands.register(
       ClearDuplicateHighlightsCommand,
-      () => new LocalActionCommand(ClearDuplicateHighlightsCommand.id, () => void 0),
+      () => new LocalActionCommand(ClearDuplicateHighlightsCommand.id, () => void 0)
     );
     commands.register(
       DeleteDuplicateRowsCommand,
-      () => new LocalActionCommand(DeleteDuplicateRowsCommand.id, () => void 0),
+      () => new LocalActionCommand(DeleteDuplicateRowsCommand.id, () => void 0)
     );
     const toolbar = createToolbar(core, platform, new FakeSheetEmbeddedEditor(), commands, undefined, queries);
     const target = document.createElement('div');
@@ -1361,7 +1479,10 @@ describe('SearWebToolbar', () => {
     const underline = target.querySelector<HTMLButtonElement>('[data-testid="toolbar-underline"]');
     const strikethrough = target.querySelector<HTMLButtonElement>('[data-testid="toolbar-crossOut"]');
     expect([bold, italic, underline, strikethrough].map((button) => button?.getAttribute('aria-label'))).toEqual([
-      'Bold', 'Italic', 'Underline', 'Strikethrough',
+      'Bold',
+      'Italic',
+      'Underline',
+      'Strikethrough',
     ]);
     expect(bold?.disabled).toBe(true);
     expect(inlineStyles.getListenerCount()).toBe(1);
@@ -1409,7 +1530,7 @@ describe('SearWebToolbar', () => {
     const commands = createCommands(core);
     commands.register(
       SetCellInlineStyleCommand,
-      () => new LocalActionCommand(SetCellInlineStyleCommand.id, () => void 0),
+      () => new LocalActionCommand(SetCellInlineStyleCommand.id, () => void 0)
     );
     const inlineStyles = createEmbeddedEditor();
     const toolbar = createToolbar(core, platform, inlineStyles.editor, commands);
@@ -1472,7 +1593,9 @@ describe('SearWebToolbar', () => {
 
     expect(root.querySelector('[data-testid="toolbar-menu"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="font-size-select"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="toolbar-sync-convert-notable"]')?.textContent).toContain('Convert to AI spreadsheet');
+    expect(root.querySelector('[data-testid="toolbar-sync-convert-notable"]')?.textContent).toContain(
+      'Convert to AI spreadsheet'
+    );
 
     root
       .querySelector<HTMLElement>('[data-testid="toolbar-insert"]')
@@ -1493,7 +1616,7 @@ describe('SearWebToolbar', () => {
   it('BUG-087 gives every icon-only toolbar button an accessible name', () => {
     const root = createReplicaToolbar(jest.fn());
     const unnamed = Array.from(root.querySelectorAll('button')).filter(
-      (button) => !button.getAttribute('aria-label') && !button.textContent?.trim(),
+      (button) => !button.getAttribute('aria-label') && !button.textContent?.trim()
     );
     expect(unnamed.map((button) => button.dataset['testid'])).toEqual([]);
     expect(root.querySelector('[data-testid="toolbar-copy"]')?.getAttribute('aria-label')).toBe('Copy');
@@ -1535,15 +1658,15 @@ describe('SearWebToolbar', () => {
     root.querySelector<HTMLElement>('[data-testid="toolbar-dv"]')?.click();
     document.querySelector<HTMLElement>('[data-testid="toolbar-menu-item-dataValidation-setValidation"]')?.click();
     const unavailable = document.querySelector<HTMLElement>(
-      '[data-testid="toolbar-menu-item-dataValidation-setValidation-People"]',
+      '[data-testid="toolbar-menu-item-dataValidation-setValidation-People"]'
     )!;
     expect(unavailable.getAttribute('aria-disabled')).toBe('true');
     expect(unavailable.textContent).toContain('validator unavailable');
     unavailable.click();
     expect(selected).not.toHaveBeenCalled();
-    document.querySelector<HTMLElement>(
-      '[data-testid="toolbar-menu-item-dataValidation-setValidation-Number"]',
-    )?.click();
+    document
+      .querySelector<HTMLElement>('[data-testid="toolbar-menu-item-dataValidation-setValidation-Number"]')
+      ?.click();
     expect(selected).toHaveBeenCalledWith('toolbar-dv', 'Number', undefined);
     root.dispatchEvent(new Event('sear-toolbar-destroy'));
   });
@@ -1586,15 +1709,15 @@ describe('SearWebToolbar', () => {
     categories.forEach((category) => {
       document.querySelector<HTMLElement>(`[data-testid="toolbar-menu-item-numberFormat-${category}"]`)?.click();
       expect(document.querySelectorAll('.sear-toolbar-popover[data-depth="1"] .wd3-listitem').length).toBeGreaterThan(
-        0,
+        0
       );
     });
 
     expect(document.querySelector('[data-testid="toolbar-menu-item-numberFormat-plain"]')?.textContent).toContain(
-      'Text',
+      'Text'
     );
     expect(document.querySelector('[data-testid="toolbar-menu-item-numberFormat-more"]')?.textContent).toContain(
-      'More number formats',
+      'More number formats'
     );
   });
 
@@ -1673,7 +1796,7 @@ describe('SearWebToolbar', () => {
           ],
         },
       ],
-      onUnavailableAction,
+      onUnavailableAction
     );
 
     const smallMenu = root.querySelector('.wd3-toolbar-icon-menu.small');

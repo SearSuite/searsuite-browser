@@ -2,9 +2,15 @@ import type { SearCoreSheet } from '@searsuite/sear-assembly-core';
 import { LocalActionCommand, SheetCommandBus, SheetQueryRegistry } from '@searsuite/sear-assembly-commands';
 import { BrowserPlatform } from '@searsuite/sear-browser-adapters';
 import { ObservationRegistry } from '@searsuite/sear-foundation-subscription';
-import { FormulaInputAssistObservation, HandleFormulaBarKeyCommand, SetFormulaBarDraftCommand, SheetFormulaBarObservation, type SheetFormulaBarState } from '@searsuite/sear-plugin-cell-editor';
+import {
+  FormulaInputAssistObservation,
+  HandleFormulaBarKeyCommand,
+  SetFormulaBarDraftCommand,
+  SheetFormulaBarObservation,
+  type SheetFormulaBarState,
+} from '@searsuite/sear-plugin-cell-editor';
 import { SelectRangeCommand } from '@searsuite/sear-plugin-selection';
-import { ReadSheetCellDataQuery } from '@searsuite/sear-render-engine';
+import { ReadSheetCellDataQuery } from '@searsuite/sear-domain-sheet';
 import { WebTextInput } from '@searsuite/sear-browser-adapters';
 import { WebFormulaBar } from '../src/WebFormulaBar';
 
@@ -20,18 +26,38 @@ it('BUG-1165 moves the focused formula-bar caret with Home and End while suggest
   const textInput = new WebTextInput();
   const onSuggestionKey = jest.fn();
   const onDraft = jest.fn();
-  commands.bind({ executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()), applyEffect: () => {} });
-  commands.register(HandleFormulaBarKeyCommand, (input) => new LocalActionCommand(HandleFormulaBarKeyCommand.id, () => onSuggestionKey(input)));
-  commands.register(SetFormulaBarDraftCommand, (input) => new LocalActionCommand(SetFormulaBarDraftCommand.id, () => onDraft(input)));
+  commands.bind({
+    executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()),
+    applyEffect: () => {},
+  });
+  commands.register(
+    HandleFormulaBarKeyCommand,
+    (input) => new LocalActionCommand(HandleFormulaBarKeyCommand.id, () => onSuggestionKey(input))
+  );
+  commands.register(
+    SetFormulaBarDraftCommand,
+    (input) => new LocalActionCommand(SetFormulaBarDraftCommand.id, () => onDraft(input))
+  );
   queries.register(ReadSheetCellDataQuery, () => ({ shape: [100, 26], getItem: () => null }));
   observations.register(SheetFormulaBarObservation, {
     getSnapshot: (): SheetFormulaBarState => ({
-      cell: [0, 0], range: { start: [0, 0], end: [0, 0] }, text: '=SU', editing: true, selectionStart: 3, selectionEnd: 3,
+      cell: [0, 0],
+      range: { start: [0, 0], end: [0, 0] },
+      text: '=SU',
+      editing: true,
+      selectionStart: 3,
+      selectionEnd: 3,
     }),
     subscribe: () => () => {},
   });
   observations.register(FormulaInputAssistObservation, {
-    getSnapshot: () => ({ suggestions: [{} as never], selectedIndex: 0, signature: null, diagnostic: null, anchor: null }),
+    getSnapshot: () => ({
+      suggestions: [{} as never],
+      selectedIndex: 0,
+      signature: null,
+      diagnostic: null,
+      anchor: null,
+    }),
     subscribe: () => () => {},
   });
   const bar = new WebFormulaBar(platform, commands, queries, observations, core, textInput);
@@ -41,7 +67,10 @@ it('BUG-1165 moves the focused formula-bar caret with Home and End while suggest
     input.focus();
     input.value = '=SU';
     input.setSelectionRange(3, 3);
-    for (const [key, expectedPosition] of [['Home', 0], ['End', 3]] as const) {
+    for (const [key, expectedPosition] of [
+      ['Home', 0],
+      ['End', 3],
+    ] as const) {
       const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
       input.dispatchEvent(event);
       expect(event.defaultPrevented).toBe(true);
@@ -75,11 +104,22 @@ it('BUG-947 restores the editor input after a name-box jump so typing reaches th
   const onTextInput = jest.fn();
   textInput.subscribe({ onTextInput });
   const select = jest.fn();
-  commands.bind({ executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()), applyEffect: () => {} });
-  commands.register(SelectRangeCommand, (selection) => new LocalActionCommand(SelectRangeCommand.id, () => select(selection)));
+  commands.bind({
+    executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()),
+    applyEffect: () => {},
+  });
+  commands.register(
+    SelectRangeCommand,
+    (selection) => new LocalActionCommand(SelectRangeCommand.id, () => select(selection))
+  );
   queries.register(ReadSheetCellDataQuery, () => ({ shape: [100, 26], getItem: () => null }));
   const state: SheetFormulaBarState = {
-    cell: [0, 0], range: { start: [0, 0], end: [0, 0] }, text: '', editing: false, selectionStart: 0, selectionEnd: 0,
+    cell: [0, 0],
+    range: { start: [0, 0], end: [0, 0] },
+    text: '',
+    editing: false,
+    selectionStart: 0,
+    selectionEnd: 0,
   };
   observations.register(SheetFormulaBarObservation, { getSnapshot: () => state, subscribe: () => () => {} });
   const bar = new WebFormulaBar(platform, commands, queries, observations, core, textInput);
@@ -119,11 +159,22 @@ it('BUG-927 selects an absolute A1 address from the name box', () => {
   const core = { renderEngine: { renderContext: { getRoot: () => surface } } } as SearCoreSheet;
   const textInput = new WebTextInput();
   const select = jest.fn();
-  commands.bind({ executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()), applyEffect: () => {} });
-  commands.register(SelectRangeCommand, (selection) => new LocalActionCommand(SelectRangeCommand.id, () => select(selection)));
+  commands.bind({
+    executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()),
+    applyEffect: () => {},
+  });
+  commands.register(
+    SelectRangeCommand,
+    (selection) => new LocalActionCommand(SelectRangeCommand.id, () => select(selection))
+  );
   queries.register(ReadSheetCellDataQuery, () => ({ shape: [200, 26], getItem: () => null }));
   const state: SheetFormulaBarState = {
-    cell: [139, 7], range: { start: [139, 7], end: [139, 7] }, text: '', editing: false, selectionStart: 0, selectionEnd: 0,
+    cell: [139, 7],
+    range: { start: [139, 7], end: [139, 7] },
+    text: '',
+    editing: false,
+    selectionStart: 0,
+    selectionEnd: 0,
   };
   observations.register(SheetFormulaBarObservation, { getSnapshot: () => state, subscribe: () => () => {} });
   const bar = new WebFormulaBar(platform, commands, queries, observations, core, textInput);
@@ -155,11 +206,22 @@ it('BUG-925 selects complete rows and columns from the name box', () => {
   const core = { renderEngine: { renderContext: { getRoot: () => surface } } } as SearCoreSheet;
   const textInput = new WebTextInput();
   const select = jest.fn();
-  commands.bind({ executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()), applyEffect: () => {} });
-  commands.register(SelectRangeCommand, (selection) => new LocalActionCommand(SelectRangeCommand.id, () => select(selection)));
+  commands.bind({
+    executePipeline: (pipeline) => pipeline.steps.forEach((step) => step.localAction?.()),
+    applyEffect: () => {},
+  });
+  commands.register(
+    SelectRangeCommand,
+    (selection) => new LocalActionCommand(SelectRangeCommand.id, () => select(selection))
+  );
   queries.register(ReadSheetCellDataQuery, () => ({ shape: [200, 26], getItem: () => null }));
   const state: SheetFormulaBarState = {
-    cell: [19, 2], range: { start: [19, 2], end: [19, 2] }, text: '', editing: false, selectionStart: 0, selectionEnd: 0,
+    cell: [19, 2],
+    range: { start: [19, 2], end: [19, 2] },
+    text: '',
+    editing: false,
+    selectionStart: 0,
+    selectionEnd: 0,
   };
   observations.register(SheetFormulaBarObservation, { getSnapshot: () => state, subscribe: () => () => {} });
   const bar = new WebFormulaBar(platform, commands, queries, observations, core, textInput);

@@ -81,6 +81,7 @@ function harness(textInput?: WebTextInput) {
   const controller = new WebDropdownController(button, surface, platform, commands, queries, observations, configure, textInput);
   return {
     controller,
+    platform,
     commands,
     queries,
     button,
@@ -154,6 +155,30 @@ it('opens scoped Alt+Down, filters and toggles current options, configures and r
     expect(h.configure).toHaveBeenCalledTimes(2);
   } finally {
     h.cleanup();
+  }
+});
+it('keeps keyboard option focus when the deferred opening frame runs', () => {
+  const h = harness();
+  let frame: FrameRequestCallback | undefined;
+  const animationFrame = jest.spyOn(h.platform, 'requestAnimationFrame').mockImplementation((callback) => {
+    frame = callback;
+    return 1;
+  });
+  try {
+    h.setState({ ...h.getState(), multiple: false });
+    h.controller.open({ row: 0, column: 0 });
+    const search = document.querySelector<HTMLInputElement>('[aria-label="Search dropdown options"]')!;
+    key(search, 'ArrowDown');
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Alpha');
+    frame!(0);
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Alpha');
+    key(document.activeElement!, 'ArrowDown');
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Beta');
+    action('Beta');
+    expect(h.picks).toHaveBeenCalledWith({ row: 0, column: 0, ruleId: 'r', label: 'Beta' });
+  } finally {
+    h.cleanup();
+    animationFrame.mockRestore();
   }
 });
 it('BUG-954 restores the editor text input after confirming a single dropdown choice', () => {

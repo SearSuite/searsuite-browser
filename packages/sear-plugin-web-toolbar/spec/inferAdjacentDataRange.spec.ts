@@ -1,4 +1,4 @@
-import { SheetMatrix } from '@searsuite/sear-render-engine';
+import { SheetMatrix } from '@searsuite/sear-domain-sheet';
 import { CellType } from '@searsuite/sear-domain-cell-types';
 import { inferAdjacentDataRange } from '../src/inferAdjacentDataRange';
 

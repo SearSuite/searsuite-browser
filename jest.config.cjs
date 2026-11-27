@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   moduleNameMapper: {
     '^@searsuite/sear-browser-adapters$': '<rootDir>/packages/sear-browser-adapters/src',
     '^@searsuite/(sear-plugin-web-.*)$': '<rootDir>/packages/$1/src',

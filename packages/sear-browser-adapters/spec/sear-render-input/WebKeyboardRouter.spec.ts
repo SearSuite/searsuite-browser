@@ -505,7 +505,7 @@ it('routes an unhandled host Escape only while its subscriber is active', () => 
   target.append(button);
   const router = new WebKeyboardRouter(target);
   const onGridEscape = jest.fn();
-  const onUnhandledEscape = jest.fn();
+  const onUnhandledEscape = jest.fn(() => true);
   router.subscribe({ onEscape: onGridEscape });
   const dispose = router.subscribe({ onUnhandledEscape });
   router.startListener();
@@ -526,6 +526,25 @@ it('routes an unhandled host Escape only while its subscriber is active', () => 
     dispose();
     expect(dispatchKey(button, { key: KeyboardKey.Escape }).defaultPrevented).toBe(false);
     expect(onUnhandledEscape).toHaveBeenCalledTimes(1);
+  } finally {
+    router.stopListener();
+    target.remove();
+  }
+});
+
+it('preserves native Escape when the editor has nothing to cancel', () => {
+  const target = document.createElement('div');
+  const dialog = document.createElement('dialog');
+  const button = document.createElement('button');
+  dialog.append(button);
+  target.append(dialog);
+  document.body.append(target);
+  const router = new WebKeyboardRouter(target);
+  router.subscribe({ onEscape: () => false, onUnhandledEscape: () => false });
+  router.startListener();
+  try {
+    expect(dispatchKey(button, { key: KeyboardKey.Escape }).defaultPrevented).toBe(false);
+    expect(dispatchKey(target, { key: KeyboardKey.Escape }).defaultPrevented).toBe(false);
   } finally {
     router.stopListener();
     target.remove();

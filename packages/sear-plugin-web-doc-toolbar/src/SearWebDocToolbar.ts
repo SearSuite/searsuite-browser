@@ -1,6 +1,6 @@
 import { DocCommandBus } from '@searsuite/sear-assembly-commands';
+import { DocInlineStyleObservation, type DocEditor, type DocInlineStyleState } from '@searsuite/sear-assembly-setup';
 import {
-  DocInlineStyleObservation,
   InsertDocTableCommand,
   RedoDocCommand,
   SetDocBoldCommand,
@@ -14,9 +14,7 @@ import {
   SetDocFontFamilyCommand,
   SetDocFontSizeCommand,
   UndoDocCommand,
-  type DocEditor,
-  type DocInlineStyleState,
-} from '@searsuite/sear-assembly-setup';
+} from '@searsuite/sear-assembly-doc';
 import { DESIGNED_TOOLBAR_ICONS, SearToolbar, TOOLBAR_CSS } from '@searsuite/sear-plugin-web-toolbar';
 
 const DOC_TOOLBAR_CSS = `
@@ -209,13 +207,13 @@ export class SearWebDocToolbar extends SearToolbar {
           'doc-undo',
           icon('undo'),
           () => this.#commands.run(UndoDocCommand, void 0),
-          UndoDocCommand,
+          UndoDocCommand
         ),
         this.#renderIconButton(
           'doc-redo',
           icon('redo'),
           () => this.#commands.run(RedoDocCommand, void 0),
-          RedoDocCommand,
+          RedoDocCommand
         ),
       ]),
       this.#renderGroup([
@@ -251,7 +249,7 @@ export class SearWebDocToolbar extends SearToolbar {
         this.#renderDisabledIconButton('doc-clear-format', icon('eraser'), 'Clear formatting'),
         this.#renderDisabledIconButton('doc-ai', icon('ai'), 'AI writing'),
       ]),
-      this.#renderMoreButton(),
+      this.#renderMoreButton()
     );
     wrapper.appendChild(line);
     return wrapper;
@@ -369,7 +367,7 @@ export class SearWebDocToolbar extends SearToolbar {
 
   #updateInlineStyleValue(
     control: Extract<DocInlineStyleControl, { readonly kind: 'value' }>,
-    status: DocInlineStyleState[string],
+    status: DocInlineStyleState[string]
   ): void {
     const select = this.#root?.querySelector<HTMLSelectElement>(`[data-testid="${control.id}"]`);
     if (!select) return;
@@ -400,10 +398,7 @@ export class SearWebDocToolbar extends SearToolbar {
     button.classList.toggle('wd3-toolbar-item-active', enabled && status.active);
   }
 
-  #isStyleCommandAvailable(
-    toggleCommand: { readonly id: string },
-    setCommand: { readonly id: string },
-  ): boolean {
+  #isStyleCommandAvailable(toggleCommand: { readonly id: string }, setCommand: { readonly id: string }): boolean {
     return this.#commands.has(toggleCommand.id) || this.#commands.has(setCommand.id);
   }
 
@@ -444,7 +439,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-bold',
         icon('bold'),
         () => this.#commands.run(ToggleDocBoldCommand, void 0),
-        ToggleDocBoldCommand,
+        ToggleDocBoldCommand
       );
     }
     if (this.#commands.has(SetDocBoldCommand)) {
@@ -452,7 +447,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-bold',
         icon('bold'),
         () => this.#commands.run(SetDocBoldCommand, { bold: true }),
-        SetDocBoldCommand,
+        SetDocBoldCommand
       );
     }
     return this.#renderDisabledIconButton('doc-bold', icon('bold'), 'Bold');
@@ -467,7 +462,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-italic',
         icon('italic'),
         () => this.#commands.run(SetDocItalicCommand, { italic: true }),
-        SetDocItalicCommand,
+        SetDocItalicCommand
       );
     }
     return this.#renderDisabledIconButton('doc-italic', icon('italic'), 'Italic');
@@ -479,7 +474,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-underline',
         icon('underline'),
         () => this.#toggleUnderline(),
-        ToggleDocUnderlineCommand,
+        ToggleDocUnderlineCommand
       );
     }
     if (this.#commands.has(SetDocUnderlineCommand)) {
@@ -487,7 +482,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-underline',
         icon('underline'),
         () => this.#commands.run(SetDocUnderlineCommand, { underline: true }),
-        SetDocUnderlineCommand,
+        SetDocUnderlineCommand
       );
     }
     return this.#renderDisabledIconButton('doc-underline', icon('underline'), 'Underline');
@@ -499,7 +494,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-strike',
         icon('strike'),
         () => this.#toggleStrikethrough(),
-        ToggleDocStrikethroughCommand,
+        ToggleDocStrikethroughCommand
       );
     }
     if (this.#commands.has(SetDocStrikethroughCommand)) {
@@ -507,7 +502,7 @@ export class SearWebDocToolbar extends SearToolbar {
         'doc-strike',
         icon('strike'),
         () => this.#commands.run(SetDocStrikethroughCommand, { strikethrough: true }),
-        SetDocStrikethroughCommand,
+        SetDocStrikethroughCommand
       );
     }
     return this.#renderDisabledIconButton('doc-strike', icon('strike'), 'Strikethrough');
@@ -520,7 +515,8 @@ export class SearWebDocToolbar extends SearToolbar {
 
   #toggleUnderline(): void {
     if (this.#commands.has(ToggleDocUnderlineCommand)) this.#commands.run(ToggleDocUnderlineCommand, void 0);
-    else if (this.#commands.has(SetDocUnderlineCommand)) this.#commands.run(SetDocUnderlineCommand, { underline: true });
+    else if (this.#commands.has(SetDocUnderlineCommand))
+      this.#commands.run(SetDocUnderlineCommand, { underline: true });
   }
 
   #toggleStrikethrough(): void {
@@ -673,7 +669,7 @@ function icon(
     | 'comment'
     | 'painter'
     | 'eraser'
-    | 'ai',
+    | 'ai'
 ): string {
   const designedIcon = DESIGNED_DOC_ICONS[type];
   if (designedIcon) return designedIcon;

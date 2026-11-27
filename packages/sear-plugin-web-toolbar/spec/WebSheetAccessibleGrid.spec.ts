@@ -1,5 +1,5 @@
 import { type SheetFormulaBarState } from '@searsuite/sear-plugin-cell-editor';
-import { type SheetCellDataReader } from '@searsuite/sear-render-engine';
+import { type SheetCellDataReader } from '@searsuite/sear-domain-sheet';
 import { WebSheetAccessibleGrid } from '../src/WebSheetAccessibleGrid';
 import { focusWebSheetSurface } from '../src/focusWebSheetSurface';
 
@@ -23,9 +23,8 @@ describe('WebSheetAccessibleGrid', () => {
     accessible.mount(surface);
     try {
       accessible.render(state([0, 0], '=HYPERLINK("https://example.com","Open")'), cells, {
-        getFormulaRichResult: (row, col) => row === 0 && col === 0
-          ? { kind: 'hyperlink', target: 'https://example.com/', label: 'Open' }
-          : undefined,
+        getFormulaRichResult: (row, col) =>
+          row === 0 && col === 0 ? { kind: 'hyperlink', target: 'https://example.com/', label: 'Open' } : undefined,
       });
       const link = document.querySelector<HTMLAnchorElement>('#hyperlink-grid-cell-0-0 a');
       expect(link?.textContent).toBe('Open');
@@ -84,9 +83,12 @@ describe('WebSheetAccessibleGrid', () => {
     document.body.appendChild(surface);
     const cells: SheetCellDataReader = {
       shape: [3, 3],
-      getItem: (row, column) => row === 0 && column === 0
-        ? { type: 'formula', formula: '=B1' }
-        : row === 1 && column === 0 ? { type: 'formula', formula: '=B1+1' } : null,
+      getItem: (row, column) =>
+        row === 0 && column === 0
+          ? { type: 'formula', formula: '=B1' }
+          : row === 1 && column === 0
+          ? { type: 'formula', formula: '=B1+1' }
+          : null,
     };
     const accessible = new WebSheetAccessibleGrid('formula-grid');
     accessible.mount(surface);
