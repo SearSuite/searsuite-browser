@@ -14,19 +14,19 @@
     "test": "node --test smoke.test.mjs"
   },
   "dependencies": {
-    "@searsuite/sear-assembly-headless": "latest",
-    "@searsuite/sear-assembly-setup": "latest",
-    "@searsuite/sear-assembly-sheet-doc": "latest",
-    "@searsuite/sear-assembly-sheet-kernel": "latest",
-    "@searsuite/sear-assembly-sheet-state": "latest",
-    "@searsuite/sear-assembly-workbook": "latest",
-    "@searsuite/sear-assembly-workbook-kernel": "latest",
-    "@searsuite/sear-browser-adapters": "latest",
-    "@searsuite/sear-domain-workbook": "latest",
-    "@searsuite/sear-plugin-formula": "latest",
-    "@searsuite/sear-plugin-web-sheet-tabbar": "latest",
-    "@searsuite/sear-plugin-web-toolbar": "latest",
-    "@searsuite/sear-render-scroll": "latest"
+    "@searsuite/sear-assembly-headless": "0.0.2",
+    "@searsuite/sear-assembly-setup": "0.0.2",
+    "@searsuite/sear-assembly-sheet-doc": "0.0.2",
+    "@searsuite/sear-assembly-sheet-kernel": "0.0.2",
+    "@searsuite/sear-assembly-sheet-state": "0.0.2",
+    "@searsuite/sear-assembly-workbook": "0.0.2",
+    "@searsuite/sear-assembly-workbook-kernel": "0.0.2",
+    "@searsuite/sear-browser-adapters": "0.0.2",
+    "@searsuite/sear-domain-workbook": "0.0.2",
+    "@searsuite/sear-plugin-formula": "0.0.2",
+    "@searsuite/sear-plugin-web-sheet-tabbar": "0.0.2",
+    "@searsuite/sear-plugin-web-toolbar": "0.0.2",
+    "@searsuite/sear-render-scroll": "0.0.2"
   },
   "devDependencies": {
     "typescript": "~5.8.3",

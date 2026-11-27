@@ -59,10 +59,10 @@ These browser pages keep changes in memory; reloading resets the seed data. `Exp
 
 Registering `WebSocketTransport` only supplies a client adapter. These examples do not connect to a collaboration service. HTTP-backed formula services also require host-managed data loading; no network-backed formula provider is configured here.
 
-This example follows the current source API, including the independent state and Workbook kernel packages. Those changes require a new npm release; the previously published `0.0.1` set does not provide this API. Run the registry check after publishing the updated package set.
+This example pins the coordinated `0.0.2` release set, including the independent Sheet state, Sheet kernel and Workbook kernel packages. Use matching versions when copying the integration into an application.
 
 ## Maintaining the examples
 
-From the Browser repository root, run `pnpm run check:examples:npm`. It copies this directory to a fresh temporary location, installs current registry releases and records their lockfile, checks SearSuite package origins, compiles all browser entries and runs the Node checks. It never builds or links sibling packages. Add `--keep` when invoking `node scripts/check-npm-examples.mjs` to retain the independent consumer for browser review.
+From the Browser repository root, run `pnpm run check:examples:npm`. It copies this directory to a fresh temporary location, installs the pinned registry releases and records their lockfile, checks SearSuite package origins, compiles all browser entries and runs the Node checks. It never builds or links sibling packages. Add `--keep` when invoking `node scripts/check-npm-examples.mjs` to retain the independent consumer for browser review.
 
 The Website Quickstart embeds these source files using `data-example` code blocks. Run `pnpm --dir ../searsuite-website generate:quickstart` after editing an example and review the updated Website template. The [online Quickstart](https://searsuite.com/docs/quickstart/) also describes how to create the application manually.

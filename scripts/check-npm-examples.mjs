@@ -27,8 +27,8 @@ try {
     assert.match(name, /^@searsuite\//);
     assert.equal(
       version,
-      "latest",
-      `Expected the current release for ${name}.`
+      "0.0.2",
+      `Expected the coordinated 0.0.2 release for ${name}.`
     );
   }
   run("npm", [
