@@ -1,6 +1,6 @@
 {
   "name": "@searsuite/sear-browser-adapters",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "homepage": "https://searsuite.com/",
   "description": "Browser implementations of SearSuite platform, rendering, input, and transport contracts.",

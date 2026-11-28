@@ -59,7 +59,7 @@ These browser pages keep changes in memory; reloading resets the seed data. `Exp
 
 Registering `WebSocketTransport` only supplies a client adapter. These examples do not connect to a collaboration service. HTTP-backed formula services also require host-managed data loading; no network-backed formula provider is configured here.
 
-This example pins the coordinated `0.0.2` release set, including the independent Sheet state, Sheet kernel and Workbook kernel packages. Use matching versions when copying the integration into an application.
+This example pins the tested release set, including the independent Sheet state, Sheet kernel and Workbook kernel packages. Copy the exact versions from package.json when integrating into an application; unchanged dependencies retain their existing versions.
 
 ## Maintaining the examples
 

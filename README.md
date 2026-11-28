@@ -4,7 +4,7 @@ Browser implementations of the platform-neutral SearSuite contracts. Keep this r
 
 ## Use the npm release
 
-All four Browser packages have `0.0.2` available on npm. Application users can follow the [npm Quickstart](https://searsuite.com/docs/quickstart/) without checking out the source workspaces.
+All four Browser packages have `0.0.3` available on npm. Application users can follow the [npm Quickstart](https://searsuite.com/docs/quickstart/) without checking out the source workspaces.
 
 The [standalone npm examples](examples/npm/README.md) provide Sheet, Workbook and Node.js Headless entries using registry packages. Copy `examples/npm` to an application directory, run `npm install`, then `npm run dev`. Open `/` for Workbook or `/sheet.html` for one Sheet. Run `npm run headless` for Node.
 
